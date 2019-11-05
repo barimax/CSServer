@@ -9,10 +9,16 @@
 import PerfectHTTPServer
 import PerfectHTTP
 
-class CRUDHandlers {
+class AuthHandlers {
     static public func registration(data: [String:Any]) throws -> RequestHandler {
         return {
             request, response in
+        }
+    }
+    static public func loginForm(data: [String:Any]) throws -> RequestHandler {
+        return {
+            request, response in
+            Authentication().loginForm(request: request, response: response)
         }
     }
 }
