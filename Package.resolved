@@ -38,6 +38,15 @@
         }
       },
       {
+        "package": "PerfectCURL",
+        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-CURL.git",
+        "state": {
+          "branch": null,
+          "revision": "37c0f695499fcb3bb0b763614f9a37d0b72a17ce",
+          "version": "4.0.1"
+        }
+      },
+      {
         "package": "PerfectCZlib",
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-CZlib-src.git",
         "state": {
@@ -65,6 +74,24 @@
         }
       },
       {
+        "package": "cURL",
+        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-libcurl.git",
+        "state": {
+          "branch": null,
+          "revision": "b3d7e65ef5c27c0a027cdc621f34835975301bf1",
+          "version": "2.1.0"
+        }
+      },
+      {
+        "package": "PerfectMIME",
+        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MIME.git",
+        "state": {
+          "branch": null,
+          "revision": "82de01249158431940e95e13b7ba29ca1d54f02a",
+          "version": "1.0.0"
+        }
+      },
+      {
         "package": "PerfectMySQL",
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MySQL.git",
         "state": {
@@ -89,6 +116,15 @@
           "branch": null,
           "revision": "d00b2b9f4cccb4c398e1bcf18f767d6b8add6af7",
           "version": "3.3.0"
+        }
+      },
+      {
+        "package": "PerfectSMTP",
+        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-SMTP.git",
+        "state": {
+          "branch": null,
+          "revision": "4937eca42a41efb85adb1fe08df2fe7ac55cccee",
+          "version": "4.0.4"
         }
       },
       {
