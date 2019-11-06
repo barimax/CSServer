@@ -6,7 +6,7 @@
         "repositoryURL": "https://github.com/barimax/CSCoreView.git",
         "state": {
           "branch": "master",
-          "revision": "b812825f79aa07984db064b94665b14acd643cfc",
+          "revision": "da70f250a8c89d2acce00c28a1499356a7631d8c",
           "version": null
         }
       },
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MySQL.git",
         "state": {
           "branch": null,
-          "revision": "f9af3a9984aa4785fcbe7126eaf0bc39320296ec",
-          "version": "3.4.1"
+          "revision": "ac24dd4c551a8d2848c1ab2ef76524bb490e07b4",
+          "version": "3.5.0"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-mysqlclient.git",
         "state": {
           "branch": null,
-          "revision": "afec636bfa3302ea155f462f139da46a53fd351a",
-          "version": "2.1.0"
+          "revision": "ed4f0e775c874b535fb24b00e6600b81f2932907",
+          "version": "2.1.1"
         }
       },
       {

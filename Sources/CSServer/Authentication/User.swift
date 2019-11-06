@@ -29,4 +29,6 @@ struct User: CSEntityProtocol {
     var phone: String
     var isLocked: Bool
     var userRole: Int
+    var salt: String
+    var validationString: String
 }

@@ -1,8 +1,9 @@
 import PerfectHTTPServer
 import CSCoreView
 
-struct CSServer {
-    let confData: [String:[[String:Any]]] = [
+public struct CSServer {
+    static let masterDBName: String = "masterDB"
+    public let confData: [String:[[String:Any]]] = [
         "servers": [
             [
                 "name":"localhost",
@@ -16,11 +17,14 @@ struct CSServer {
         CSRegister.add(forKey: User.registerName, type: User.self)
         CSRegister.add(forKey: Organization.registerName, type: Organization.self)
     }
-    func start() {
+    public func start() {
+        self.addToRegister()
         do {
+            try CSRegister.setup(withDatabase: CSServer.masterDBName)
             try HTTPServer.launch(configurationData: self.confData)
         } catch {
             print("Network error thrown: \(error)")
         }
     }
+    public init() {}
 }

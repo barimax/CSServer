@@ -10,8 +10,9 @@ import PerfectHTTP
 
 extension Authentication {
     func loginForm(request: HTTPRequest, response: HTTPResponse) {
-        let loginForm: String = "<h1>Login form</h1>"
+        let loginForm: String = #"<html><h1>Login form</h1></html>"#
         response.setBody(string: loginForm)
         response.completed()
     }
 }
+
