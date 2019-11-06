@@ -92,6 +92,15 @@
         }
       },
       {
+        "package": "PerfectMustache",
+        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-Mustache.git",
+        "state": {
+          "branch": null,
+          "revision": "a3bce7e83fb6995cb2048c2dab75e7ce07773819",
+          "version": "3.0.2"
+        }
+      },
+      {
         "package": "PerfectMySQL",
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MySQL.git",
         "state": {
