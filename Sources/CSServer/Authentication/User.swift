@@ -5,6 +5,7 @@
 //  Created by Georgie Ivanov on 1.11.19.
 //
 import CSCoreView
+import Foundation
 
 struct User: CSEntityProtocol {
     static var registerName: String = "user"
@@ -31,4 +32,5 @@ struct User: CSEntityProtocol {
     var userRole: Int
     var salt: String
     var validationString: String
+    var timestamp: Date?
 }

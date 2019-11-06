@@ -10,5 +10,6 @@ import Foundation
 func routes() -> [[String: Any]] {
     var routes: [[String: Any]] = [[String: Any]]()
     routes.append(["method":"get", "uri":"/**", "handler":AuthHandlers.loginForm])
+    routes.append(["method":"post", "uri":"/registration", "handler":AuthHandlers.registration])
     return routes
 }

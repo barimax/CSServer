@@ -2,8 +2,12 @@ import PerfectHTTPServer
 import CSCoreView
 
 public struct CSServer {
-    static let masterDBName: String = "masterDB"
-    public let confData: [String:[[String:Any]]] = [
+    static var masterDBName: String = "masterDB"
+    static var host: String = "127.0.0.1"
+    static var username: String = "bmserver"
+    static var password: String = "B@r1m@x2016"
+    static let port: Int = 3306
+    let confData: [String:[[String:Any]]] = [
         "servers": [
             [
                 "name":"localhost",
