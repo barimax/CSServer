@@ -12,4 +12,6 @@ enum AuthError: Error {
     case invalidEmailPassword
     case withDescription(message: String)
     case passwordGeneratorError
+    case userExist
+    case organizationExists
 }

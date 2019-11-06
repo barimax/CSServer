@@ -11,6 +11,7 @@ import PerfectCRUD
 import PerfectMySQL
 import PerfectCrypto
 import CSCoreView
+import SwiftMoment
 
 
 extension Authentication {
@@ -39,11 +40,11 @@ extension Authentication {
         let decoded = try JSONDecoder().decode(RegistrationBody.self, from: data)
         let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
             MySQLDatabaseConfiguration(
-                database: CSServer.masterDBName,
-                host: CSServer.host,
-                port: CSServer.port,
-                username: CSServer.username,
-                password: CSServer.password)
+                database: CSServer.configuration!.masterDBName,
+                host: CSServer.configuration!.host,
+                port: CSServer.configuration!.port,
+                username: CSServer.configuration!.username,
+                password: CSServer.configuration!.password)
         )
         let dbName: String = try self.databaseNameGenerator(connection: db)
         let organization = Organization(id: 0,
@@ -55,6 +56,12 @@ extension Authentication {
                                         dbName: dbName
         )
         try db.transaction {
+            guard try db.table(User.self).where(\User.email == decoded.email).count() == 0 else {
+                throw AuthError.userExist
+            }
+            guard try db.table(Organization.self).where(\Organization.eik == decoded.orgEIK).count() == 0 else {
+                throw AuthError.organizationExists
+            }
             guard let newOrgId: UInt64 = try db.table(Organization.self).insert(organization).lastInsertId() else {
                 throw AuthError.passwordGeneratorError
             }
@@ -69,12 +76,13 @@ extension Authentication {
                             isLocked: true,
                             userRole: 3,
                             salt: salt,
-                            validationString: String(randomWithLength: 20)
+                            validationString: String(randomWithLength: 20),
+                            timestamp: moment().date
             )
             try db.table(User.self).insert(user)
         }
-        
-        response.setBody(string: "Check email to complete registration.")
+        let user = try db.table(User.self).where(\User.email == decoded.email).first()!
+        try response.setBody(json: user)
         response.completed()
     }
 }
