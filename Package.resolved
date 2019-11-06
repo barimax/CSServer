@@ -108,6 +108,15 @@
           "revision": "5a08c2a596df23a3ae30b6ac9cb509a38384166c",
           "version": "3.1.4"
         }
+      },
+      {
+        "package": "SwiftMoment",
+        "repositoryURL": "https://github.com/iamjono/SwiftMoment.git",
+        "state": {
+          "branch": null,
+          "revision": "829be0bbb542655158cf7f20710895882de1151a",
+          "version": "1.2.0"
+        }
       }
     ]
   },

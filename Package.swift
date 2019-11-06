@@ -11,9 +11,10 @@ let package = Package(
 	dependencies: [
         .package(url: "https://github.com/PerfectlySoft/Perfect-HTTPServer.git", "3.0.23"..<"4.0.0"),
         .package(url: "https://github.com/barimax/CSCoreView.git", .branch("master")),
+        .package(url: "https://github.com/iamjono/SwiftMoment.git", "1.2.0"..<"2.0.0"),
 	],
 	targets: [
-		.target(name: "CSServer", dependencies: ["PerfectHTTPServer", "CSCoreView"]),
+		.target(name: "CSServer", dependencies: ["PerfectHTTPServer", "CSCoreView", "SwiftMoment"]),
 		.testTarget(name: "CSServerTests", dependencies: ["CSServer"])
 	]
 )
