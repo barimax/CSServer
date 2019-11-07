@@ -23,6 +23,6 @@ func filters() -> [[String: Any]] {
 //    filters.append(["type":"request","priority":"high","name":SessionMySQLFilter.filterAPIRequest])
 //    filters.append(["type":"response","priority":"high","name":SessionMySQLFilter.filterAPIResponse])
     
-    filters.append(["type":"request","priority":"high","name":AuthorizationFilter(secret: CSServer.configuration!.secret, routesWithAuthorization: <#T##Routes#>).filter])
+    filters.append(["type":"request","priority":"high","name":AuthorizationFilter(secret: CSServer.configuration!.secret).filter])
     return filters
 }
