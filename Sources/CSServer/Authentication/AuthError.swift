@@ -14,4 +14,5 @@ enum AuthError: Error {
     case passwordGeneratorError
     case userExist
     case organizationExists
+    case prepareTokenError
 }

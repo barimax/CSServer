@@ -12,6 +12,7 @@ import PerfectMySQL
 import PerfectCrypto
 import CSCoreView
 import SwiftMoment
+import PerfectMustache
 
 
 extension Authentication {
@@ -22,6 +23,35 @@ extension Authentication {
             return try self.databaseNameGenerator(connection: connection)
         }
         return dbName
+    }
+    private func conformationEmail(validationString: String) throws -> String {
+        let templatePath = "\(CSServer.configuration!.template)/email.mustache"
+        let map: [String:Any] = [
+            "validationString": validationString,
+            "domainURL": CSServer.configuration!.domainURL
+        ]
+        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
+        let collector = MustacheEvaluationOutputCollector()
+        let s = try context.formulateResponse(withCollector: collector)
+        print(s)
+        
+        return s
+//        return """
+//        <html>
+//            <head>
+//                <title>Email from CSServer</title>
+//                <style>
+//                    #confirm-btn {
+//                        background-color: pink;
+//                    }
+//                </style>
+//            </head>
+//            <body>
+//                <h3>Confirm</h3>
+//        <a href="\(CSServer.configuration!.domainURL)/emailValidation?s=\(validationString)" id="confirm-btn">Click to confirm</div>
+//            </body>
+//        </html>
+//        """
     }
     func registration(request: HTTPRequest, response: HTTPResponse) throws {
         struct RegistrationBody: Decodable {
@@ -55,6 +85,7 @@ extension Authentication {
                                         description: decoded.orgDescription,
                                         dbName: dbName
         )
+        try db.sql("SET time_zone = '+2:00'")
         try db.transaction {
             guard try db.table(User.self).where(\User.email == decoded.email).count() == 0 else {
                 throw AuthError.userExist
@@ -77,11 +108,18 @@ extension Authentication {
                             userRole: 3,
                             salt: salt,
                             validationString: String(randomWithLength: 20),
-                            timestamp: moment().date
+                            timestamp: moment(TimeZone(identifier: "Europe/Sofia")!, locale: Locale(identifier: "bg_BG")).date
             )
             try db.table(User.self).insert(user)
         }
         let user = try db.table(User.self).where(\User.email == decoded.email).first()!
+        Utility.sendMail(
+            name: "Barimax ood",
+            address: user.email,
+            subject: "Validate email",
+            html: try self.conformationEmail(validationString: user.validationString),
+            text: ""
+        )
         try response.setBody(json: user)
         response.completed()
     }

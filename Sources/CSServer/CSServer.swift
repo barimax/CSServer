@@ -2,7 +2,7 @@ import PerfectHTTPServer
 import CSCoreView
 
 public struct CSServer {
-    static var configuration: Configuration?
+    public static var configuration: Configuration?
     
     let confData: [String:[[String:Any]]] = [
         "servers": [
@@ -14,21 +14,18 @@ public struct CSServer {
             ]
         ]
     ]
+    public init(configuration c: Configuration) throws {
+        let dbConfig = CSCoreDB(host: c.host, username: c.username, password: c.password)
+        CSServer.configuration = c
+        CSCoreDBConfig.dbConfiguration = dbConfig
+        self.addToRegister()
+        try CSRegister.setup(withDatabase: c.masterDBName, configuration: dbConfig)
+        try HTTPServer.launch(configurationData: self.confData)
+    }
     func addToRegister() {
         CSRegister.add(forKey: User.registerName, type: User.self)
         CSRegister.add(forKey: Organization.registerName, type: Organization.self)
     }
-    public func start() throws {
-        guard let c = CSServer.configuration else {
-            throw AuthError.withDescription(message: "No configuration.")
-        }
-        self.addToRegister()
-        do {
-            try CSRegister.setup(withDatabase: c.masterDBName)
-            try HTTPServer.launch(configurationData: self.confData)
-        } catch {
-            print("Network error thrown: \(error)")
-        }
-    }
+    
     
 }

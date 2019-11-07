@@ -6,6 +6,7 @@
 //
 
 import PerfectSMTP
+import PerfectCURL
 
 public class Utility {
     public static func sendMail(name: String = "",
@@ -22,9 +23,11 @@ public class Utility {
             return
         }
         guard let configuration = CSServer.configuration else {
+            if let handler = completion {
+                handler(nil, nil, nil)
+            }
             return
         }
-        
         let client = SMTPClient(url: configuration.smtpConfiguration.mailserver, username: configuration.smtpConfiguration.mailuser, password: configuration.smtpConfiguration.mailpass)
         
         let email = EMail(client: client)
@@ -35,16 +38,17 @@ public class Utility {
         if !html.isEmpty { email.content = html }
         if !text.isEmpty { email.text = text }
         email.to.append(Recipient(name: name, address: address))
-        
         do {
+            
             try email.send { code, header, body in
                 /// response info from mail server
                 if let handler = completion {
+                    print(body)
                     handler(code, header, body)
                 }
             }
+        
         } catch {
-            print("sendMail error: \(error)")
             /// something wrong
             if let handler = completion {
                 handler(nil, nil, nil)

@@ -28,4 +28,15 @@ class AuthHandlers {
             }
         }
     }
+    static public func login(data: [String:Any]) throws -> RequestHandler {
+        return {
+            request, response in
+            do {
+                try Authentication().login(request: request, response: response)
+            } catch {
+                response.status = .custom(code: 403, message: "\(error)")
+                response.completed()
+            }
+        }
+    }
 }
