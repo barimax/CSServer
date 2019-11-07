@@ -15,4 +15,11 @@ enum AuthError: Error {
     case userExist
     case organizationExists
     case prepareTokenError
+    case jwtError(error: JWTError)
+}
+
+enum JWTError: Error {
+    case expired
+    case incorrectDate
+    case dateNotExist
 }

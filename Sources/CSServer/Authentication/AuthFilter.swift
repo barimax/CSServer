@@ -8,29 +8,34 @@ import Foundation
 import PerfectHTTP
 import PerfectCrypto
 
+struct UserCredentials {
+    public let email: String
+    public let userRole: Int
+}
+
 public class AuthorizationFilter: HTTPRequestFilter {
     
     private let secret: String
-    private let routesWithAuthorization: Routes
     
-    public init(secret: String, routesWithAuthorization: Routes) {
+    public init(secret: String) {
         self.secret = secret
-        self.routesWithAuthorization = routesWithAuthorization
     }
     
     public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
-        
-        guard let _ = self.routesWithAuthorization.navigator.findHandler(uri: request.uri, webRequest: request) else {
+        if request.uri == "\(CSServer.configuration!.domainURL)/lgoin" ||
+            request.uri == "\(CSServer.configuration!.domainURL)/registration" ||
+            request.uri == "\(CSServer.configuration!.domainURL)/emailValidation" {
+            print("Guest.")
             return callback(.continue(request, response))
         }
-        
+        print("Must Auth!")
         guard var header = request.header(.authorization) else {
-            response.sendUnauthorizedError()
+            response.completed(status: .custom(code: 403, message: "Not Authorized."))
             return callback(.halt(request, response))
         }
         
         guard header.starts(with: "Bearer ") else {
-            response.sendUnauthorizedError()
+            response.completed(status: .custom(code: 403, message: "Not Authorized."))
             return callback(.halt(request, response))
         }
         
@@ -38,7 +43,7 @@ public class AuthorizationFilter: HTTPRequestFilter {
             header.removeFirst(7)
             
             guard let jwt = JWTVerifier(header) else {
-                response.sendUnauthorizedError()
+                response.completed(status: .custom(code: 403, message: "Not Authorized."))
                 return callback(.halt(request, response))
             }
             
@@ -47,13 +52,12 @@ public class AuthorizationFilter: HTTPRequestFilter {
 
             self.addUserCredentialsToRequest(request: request, jwt: jwt)
             
-        } catch is JWTTokenExpirationDateError {
-            print("Token expiration date error.")
-            response.sendUnauthorizedError()
-            return callback(.halt(request, response))
+//        } catch AuthError.jwtError(error: <#T##JWTError#>) {
+//            response.sendUnauthorizedError()
+//            return callback(.halt(request, response))
         } catch {
             print("Failed to decode JWT: \(error)")
-            response.sendUnauthorizedError()
+            response.completed(status: .custom(code: 403, message: "Not Authorized."))
             return callback(.halt(request, response))
         }
         
@@ -61,10 +65,9 @@ public class AuthorizationFilter: HTTPRequestFilter {
     }
 
     private func addUserCredentialsToRequest(request: HTTPRequest, jwt: JWTVerifier) {
-        if let name = jwt.payload[ClaimsNames.name.rawValue] as? String {
-            let userCredentials = UserCredentials(
-                name: name,
-                roles: jwt.payload[ClaimsNames.roles.rawValue] as? [String]
+        if let email = jwt.payload[ClaimsNames.email.rawValue] as? String,
+            let role = jwt.payload[ClaimsNames.role.rawValue] as? Int {
+            let userCredentials = UserCredentials(email: email, userRole: role
             )
             request.add(userCredentials: userCredentials)
         }
