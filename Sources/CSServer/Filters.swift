@@ -7,6 +7,7 @@
 
 import Foundation
 import PerfectHTTP
+import PerfectSessionMySQL
 
 func filters() -> [[String: Any]] {
     
@@ -23,6 +24,29 @@ func filters() -> [[String: Any]] {
 //    filters.append(["type":"request","priority":"high","name":SessionMySQLFilter.filterAPIRequest])
 //    filters.append(["type":"response","priority":"high","name":SessionMySQLFilter.filterAPIResponse])
     
-    filters.append(["type":"request","priority":"high","name":AuthorizationFilter(secret: CSServer.configuration!.secret).filter])
+    filters.append(["type":"request","priority":"high","name":AuthorizationFilter.authFilter])
     return filters
+}
+
+public struct CSFilters {
+    private static var requestFilters: [(HTTPRequestFilter, HTTPFilterPriority)] = []
+    private static var responseFilters: [(HTTPResponseFilter, HTTPFilterPriority)] = []
+    
+    public static func add(requestFilter filter: (HTTPRequestFilter, HTTPFilterPriority)){
+        Self.requestFilters.append(filter)
+    }
+    public static func add(responseFilter filter: (HTTPResponseFilter, HTTPFilterPriority)){
+        Self.responseFilters.append(filter)
+    }
+    public static func getRequestFilters() -> [(HTTPRequestFilter, HTTPFilterPriority)] {
+        Self.requestFilters
+    }
+    public static func getResponseFilters() -> [(HTTPResponseFilter, HTTPFilterPriority)]  {
+        Self.responseFilters
+    }
+}
+extension CSFilters {
+    static func load() {
+        Self.requestFilters.append((AuthorizationFilter(), .high))
+    }
 }

@@ -24,35 +24,8 @@ extension Authentication {
         }
         return dbName
     }
-    private func conformationEmail(validationString: String) throws -> String {
-        let templatePath = "\(CSServer.configuration!.template)/email.mustache"
-        let map: [String:Any] = [
-            "validationString": validationString,
-            "domainURL": CSServer.configuration!.domainURL
-        ]
-        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
-        let collector = MustacheEvaluationOutputCollector()
-        let s = try context.formulateResponse(withCollector: collector)
-        print(s)
-        
-        return s
-//        return """
-//        <html>
-//            <head>
-//                <title>Email from CSServer</title>
-//                <style>
-//                    #confirm-btn {
-//                        background-color: pink;
-//                    }
-//                </style>
-//            </head>
-//            <body>
-//                <h3>Confirm</h3>
-//        <a href="\(CSServer.configuration!.domainURL)/emailValidation?s=\(validationString)" id="confirm-btn">Click to confirm</div>
-//            </body>
-//        </html>
-//        """
-    }
+    
+    
     func registration(request: HTTPRequest, response: HTTPResponse) throws {
         struct RegistrationBody: Decodable {
             let email: String
@@ -63,6 +36,7 @@ extension Authentication {
             let orgMOL: String
             let orgDescription: String
         }
+        
         guard let requestBody = request.postBodyString,
             let data = requestBody.data(using: .utf8) else {
             throw AuthError.invalidRequest
@@ -85,10 +59,17 @@ extension Authentication {
                                         description: decoded.orgDescription,
                                         dbName: dbName
         )
-        try db.sql("SET time_zone = '+2:00'")
+        
         try db.transaction {
-            guard try db.table(User.self).where(\User.email == decoded.email).count() == 0 else {
-                throw AuthError.userExist
+            if var existingUser = try db.table(User.self).where(\User.email == decoded.email).first()  {
+                if existingUser.isLocked {
+                    existingUser.timestamp = Date()
+                    try db.table(User.self).where(\User.email == decoded.email).update(existingUser)
+                    let resp: AuthResponse = AuthResponse(userId: existingUser.id, email: existingUser.email, isValidated: !existingUser.isLocked)
+                    response.sendResponse(body: resp, responseType: .json)
+                }else{
+                    throw AuthError.userExist
+                }
             }
             guard try db.table(Organization.self).where(\Organization.eik == decoded.orgEIK).count() == 0 else {
                 throw AuthError.organizationExists
@@ -108,19 +89,80 @@ extension Authentication {
                             userRole: 3,
                             salt: salt,
                             validationString: String(randomWithLength: 20),
-                            timestamp: moment(TimeZone(identifier: "Europe/Sofia")!, locale: Locale(identifier: "bg_BG")).date
+                            timestamp: Date()
             )
             try db.table(User.self).insert(user)
         }
         let user = try db.table(User.self).where(\User.email == decoded.email).first()!
         Utility.sendMail(
-            name: "Barimax ood",
+            name: organization.name,
             address: user.email,
             subject: "Validate email",
             html: try self.conformationEmail(validationString: user.validationString),
             text: ""
         )
-        try response.setBody(json: user)
-        response.completed()
+        let resp: AuthResponse = AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked)
+        response.sendResponse(body: resp, responseType: .json)
+    }
+    
+    func validateEmail(request: HTTPRequest, response: HTTPResponse) throws {
+        guard let validationString = request.param(name: "s") else {
+            throw AuthError.invalidRequest
+        }
+        let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
+            MySQLDatabaseConfiguration(
+                database: CSServer.configuration!.masterDBName,
+                host: CSServer.configuration!.host,
+                port: CSServer.configuration!.port,
+                username: CSServer.configuration!.username,
+                password: CSServer.configuration!.password)
+        )
+        let yesterday = moment().subtract(1, .Days).date
+        guard var user: User = try? db.table(User.self).where(\User.validationString == validationString && \User.timestamp! > yesterday).first() else {
+            try db.transaction {
+                let query = db.table(User.self).where(\User.validationString == validationString)
+                if let user = try query.first(), user.isLocked {
+                    try db.table(Organization.self).where(\Organization.id == user.organizationId).delete()
+                    try query.delete()
+                }
+            }
+            
+            throw AuthError.notValidatedEmail
+        }
+        user.isLocked = false
+        try db.table(User.self).where(\User.id == user.id).update(user)
+        let resp: AuthResponse = AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked)
+        response.sendResponse(body: resp, responseType: .json)
+    }
+    func resendVaidationEmail(request: HTTPRequest, response: HTTPResponse) throws {
+        struct ResendEmail: Codable {
+            let email: String
+        }
+        guard let requestBody = request.postBodyString,
+            let data = requestBody.data(using: .utf8) else {
+            throw AuthError.invalidRequest
+        }
+        let decoded = try JSONDecoder().decode(ResendEmail.self, from: data)
+        let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
+            MySQLDatabaseConfiguration(
+                database: CSServer.configuration!.masterDBName,
+                host: CSServer.configuration!.host,
+                port: CSServer.configuration!.port,
+                username: CSServer.configuration!.username,
+                password: CSServer.configuration!.password)
+        )
+        guard let user: User = try? db.table(User.self).where(\User.email == decoded.email && \User.isLocked == true).first(),
+            let organization: Organization = try? db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
+            throw AuthError.invalidEmailPassword
+        }
+        print(user.email)
+        Utility.sendMail(
+            name: organization.name,
+            address: user.email,
+            subject: "Validate email",
+            html: try self.conformationEmail(validationString: user.validationString),
+            text: ""
+        )
+        response.sendResponse(body: true, responseType: .bool)
     }
 }

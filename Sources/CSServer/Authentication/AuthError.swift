@@ -13,6 +13,7 @@ enum AuthError: Error {
     case withDescription(message: String)
     case passwordGeneratorError
     case userExist
+    case notValidatedEmail
     case organizationExists
     case prepareTokenError
     case jwtError(error: JWTError)

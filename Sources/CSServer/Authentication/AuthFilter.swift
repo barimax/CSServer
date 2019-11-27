@@ -7,28 +7,22 @@
 import Foundation
 import PerfectHTTP
 import PerfectCrypto
+import PerfectCRUD
+import PerfectMySQL
 
 struct UserCredentials {
     public let email: String
     public let userRole: Int
+    public let organization: Organization
 }
 
-public class AuthorizationFilter: HTTPRequestFilter {
-    
-    private let secret: String
-    
-    public init(secret: String) {
-        self.secret = secret
-    }
+public struct AuthorizationFilter: HTTPRequestFilter {
     
     public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
-        if request.uri == "\(CSServer.configuration!.domainURL)/lgoin" ||
-            request.uri == "\(CSServer.configuration!.domainURL)/registration" ||
-            request.uri == "\(CSServer.configuration!.domainURL)/emailValidation" {
-            print("Guest.")
+        guard let h = CSServer.routes.getAllRestrictedRoutes().navigator.findHandler(uri: request.uri, webRequest: request) else {
             return callback(.continue(request, response))
         }
-        print("Must Auth!")
+        print(h)
         guard var header = request.header(.authorization) else {
             response.completed(status: .custom(code: 403, message: "Not Authorized."))
             return callback(.halt(request, response))
@@ -47,14 +41,10 @@ public class AuthorizationFilter: HTTPRequestFilter {
                 return callback(.halt(request, response))
             }
             
-            try jwt.verify(algo: .hs256, key: HMACKey(secret))
+            try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
             try jwt.verifyExpirationDate()
 
-            self.addUserCredentialsToRequest(request: request, jwt: jwt)
-            
-//        } catch AuthError.jwtError(error: <#T##JWTError#>) {
-//            response.sendUnauthorizedError()
-//            return callback(.halt(request, response))
+            try self.addUserCredentialsToRequest(request: request, jwt: jwt)
         } catch {
             print("Failed to decode JWT: \(error)")
             response.completed(status: .custom(code: 403, message: "Not Authorized."))
@@ -64,13 +54,25 @@ public class AuthorizationFilter: HTTPRequestFilter {
         callback(.continue(request, response))
     }
 
-    private func addUserCredentialsToRequest(request: HTTPRequest, jwt: JWTVerifier) {
+    private func addUserCredentialsToRequest(request: HTTPRequest, jwt: JWTVerifier) throws {
+        let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
+            MySQLDatabaseConfiguration(
+                database: CSServer.configuration!.masterDBName,
+                host: CSServer.configuration!.host,
+                port: CSServer.configuration!.port,
+                username: CSServer.configuration!.username,
+                password: CSServer.configuration!.password)
+        )
         if let email = jwt.payload[ClaimsNames.email.rawValue] as? String,
-            let role = jwt.payload[ClaimsNames.role.rawValue] as? Int {
-            let userCredentials = UserCredentials(email: email, userRole: role
-            )
+            let role = jwt.payload[ClaimsNames.role.rawValue] as? Int,
+            let organizationId = jwt.payload[ClaimsNames.org.rawValue] as? Int,
+            let organization = try? db.table(Organization.self).where(\Organization.id == UInt64(organizationId)).first() {
+                let userCredentials = UserCredentials(email: email, userRole: role, organization: organization)
             request.add(userCredentials: userCredentials)
         }
+    }
+    public static func authFilter(data: [String:Any]) throws -> HTTPRequestFilter {
+        AuthorizationFilter()
     }
 }
 

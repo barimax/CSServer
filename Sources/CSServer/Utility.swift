@@ -43,7 +43,6 @@ public class Utility {
             try email.send { code, header, body in
                 /// response info from mail server
                 if let handler = completion {
-                    print(body)
                     handler(code, header, body)
                 }
             }
