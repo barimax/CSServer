@@ -31,7 +31,12 @@ public struct CSServer {
         SessionConfig.userAgentLock = false
         // The interval at which stale sessions are purged from the database
         SessionConfig.purgeInterval = 3600 // in seconds. Default is 1 hour.
-        
+        MySQLSessionConnector.host = dbConfig.host
+        MySQLSessionConnector.port = dbConfig.port
+        MySQLSessionConnector.username = dbConfig.username
+        MySQLSessionConnector.password = dbConfig.password
+        MySQLSessionConnector.database = c.masterDBName
+        MySQLSessionConnector.table = "sessions"
     }
     public func start() throws {
         let sessionDriver = SessionMemoryDriver()
