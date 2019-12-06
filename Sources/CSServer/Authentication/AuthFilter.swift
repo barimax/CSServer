@@ -19,10 +19,60 @@ struct UserCredentials {
 public struct AuthorizationFilter: HTTPRequestFilter {
     
     public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
-        guard let h = CSServer.routes.getAllRestrictedRoutes().navigator.findHandler(uri: request.uri, webRequest: request) else {
+        guard CSServer.configuration!.healthyCheckPath != request.uri else {
             return callback(.continue(request, response))
         }
-        print(h)
+        guard let routeOptions: (CSAccessLevel, CSSessionType) = CSServer.routes.getRouteOptions(uri: request.uri) else {
+            return callback(.halt(request, response))
+        }
+        var createSession: Bool = true
+        var session: CSSession = CSSession()
+        let sessionManager: CSSessionManager = CSSessionManager()
+        if routeOptions.1 == .cookie {
+            if let cookieToken = request.getCookie(name: "\(CSServer.configuration!.domain)Session") {
+                session = sessionManager.resume(token: cookieToken)
+            }
+        }else{
+            if var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") {
+                bearer.removeFirst("Bearer ".count)
+                if let jwt = JWTVerifier(bearer) {
+                    do {
+                        try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
+                        try jwt.verifyExpirationDate()
+                        if let token = jwt.payload[ClaimsNames.sessionToken.rawValue] as? String {
+                            session = sessionManager.resume(token: token)
+                        }
+                    }catch{
+                        print(error)
+                    }
+                }
+            }
+        }
+        if !session.token.isEmpty {
+            if session.isValid(request) {
+                request.session = session
+                createSession = false
+            } else {
+                sessionManager.destroy(request, response)
+            }
+        }
+        if createSession {
+            request.session = sessionManager.start(request)
+        }
+        if routeOptions.0 != .guest && request.session?.userId == 0 {
+            if routeOptions.1 == .cookie {
+                response.setHeader(.wwwAuthenticate, value: "BASIC")
+            }else{
+                response.setHeader(.wwwAuthenticate, value: "BEARER")
+            }
+            response.status = .unauthorized
+            callback(.halt(request, response))
+        }
+        callback(.continue(request, response))
+//        guard let h = CSServer.routes.getAllRestrictedRoutes().navigator.findHandler(uri: request.uri, webRequest: request) else {
+//            return callback(.continue(request, response))
+//        }
+//        print(h)
         guard var header = request.header(.authorization) else {
             response.completed(status: .custom(code: 403, message: "Not Authorized."))
             return callback(.halt(request, response))
@@ -53,6 +103,8 @@ public struct AuthorizationFilter: HTTPRequestFilter {
         
         callback(.continue(request, response))
     }
+    
+  
 
     private func addUserCredentialsToRequest(request: HTTPRequest, jwt: JWTVerifier) throws {
         let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:

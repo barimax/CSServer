@@ -10,7 +10,7 @@ import PerfectCrypto
 import PerfectMustache
 
 public class Authentication {
-    func prepareToken(user: User) throws -> String {
+    func prepareToken(user: User, token: String) throws -> String {
 
         let payload = [
             ClaimsNames.email.rawValue          : user.email,
@@ -18,7 +18,8 @@ public class Authentication {
             ClaimsNames.issuer.rawValue         : CSServer.configuration!.domain,
             ClaimsNames.issuedAt.rawValue       : Date().timeIntervalSince1970,
             ClaimsNames.expiration.rawValue     : Date().addingTimeInterval(36000).timeIntervalSince1970,
-            ClaimsNames.org.rawValue            : user.organizationId
+            ClaimsNames.org.rawValue            : user.organizationId,
+            ClaimsNames.sessionToken.rawValue   : token
         ] as [String : Any]
 
         guard let jwt = JWTCreator(payload: payload) else {
@@ -53,10 +54,11 @@ public class Authentication {
     
 }
 public enum ClaimsNames : String {
-    case email = "email"
-    case role = "role"
+    case email = "eml"
+    case role = "rol"
     case issuer = "iss"
     case issuedAt = "iat"
     case expiration = "exp"
     case org = "org"
+    case sessionToken = "sst"
 }

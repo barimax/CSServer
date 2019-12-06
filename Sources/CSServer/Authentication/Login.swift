@@ -60,7 +60,7 @@ extension Authentication {
                 let resp: AuthResponse = AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked)
                 response.sendResponse(body: resp, responseType: .json)
             }
-            let resp: AuthResponse = try AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked, token: self.prepareToken(user: user))
+            let resp: AuthResponse = try AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked, token: self.prepareToken(user: user, token: "demoToken"))
             response.sendResponse(body: resp, responseType: .json)
         }
     }

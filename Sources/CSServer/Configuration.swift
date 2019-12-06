@@ -20,6 +20,7 @@ public struct Configuration {
     public var webroot: String = "./webroot"
     public var template: String = "./template"
     public var secret: String
+    public var healthyCheckPath: String = "/healthCheck"
     
     public var smtpConfiguration: SMTPConfig
     
