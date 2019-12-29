@@ -61,4 +61,12 @@ class AuthHandlers {
             response.completed()
         }
     }
+    static func bearerLogin(request: HTTPRequest, _ response: HTTPResponse)  {
+        do {
+            try Authentication().bearerLogin(request: request, response: response)
+        } catch {
+            response.status = .custom(code: 403, message: "\(error)")
+            response.completed()
+        }
+    }
 }

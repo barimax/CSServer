@@ -14,10 +14,9 @@ let package = Package(
         .package(url: "https://github.com/iamjono/SwiftMoment.git", "1.2.0"..<"2.0.0"),
         .package(url: "https://github.com/PerfectlySoft/Perfect-SMTP.git", "4.0.4"..<"4.1.0"),
         .package(url: "https://github.com/PerfectlySoft/Perfect-Mustache.git", "3.0.2"..<"4.0.0"),
-        .package(url: "https://github.com/barimax/Perfect-Session-MySQL.git", .branch("master")),
 	],
 	targets: [
-		.target(name: "CSServer", dependencies: ["PerfectHTTPServer", "CSCoreView", "SwiftMoment", "PerfectSMTP", "PerfectMustache", "PerfectSessionMySQL"]),
+		.target(name: "CSServer", dependencies: ["PerfectHTTPServer", "CSCoreView", "SwiftMoment", "PerfectSMTP", "PerfectMustache"]),
 		.testTarget(name: "CSServerTests", dependencies: ["CSServer"])
 	]
 )

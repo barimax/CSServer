@@ -10,7 +10,7 @@ import PerfectCrypto
 import PerfectCRUD
 import PerfectMySQL
 
-struct UserCredentials {
+struct UserCredentials: Codable {
     public let email: String
     public let userRole: Int
     public let organization: Organization
@@ -22,9 +22,9 @@ public struct AuthorizationFilter: HTTPRequestFilter {
         guard CSServer.configuration!.healthyCheckPath != request.uri else {
             return callback(.continue(request, response))
         }
-        guard let routeOptions: (CSAccessLevel, CSSessionType) = CSServer.routes.getRouteOptions(uri: request.uri) else {
-            return callback(.halt(request, response))
-        }
+        print("check start")
+        let routeOptions = CSServer.routes.getRouteOptions(uri: request.uri) ?? (.guest, .cookie)
+        print(routeOptions)
         var createSession: Bool = true
         var session: CSSession = CSSession()
         let sessionManager: CSSessionManager = CSSessionManager()
@@ -32,24 +32,33 @@ public struct AuthorizationFilter: HTTPRequestFilter {
             if let cookieToken = request.getCookie(name: "\(CSServer.configuration!.domain)Session") {
                 session = sessionManager.resume(token: cookieToken)
             }
-        }else{
-            if var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") {
-                bearer.removeFirst("Bearer ".count)
-                if let jwt = JWTVerifier(bearer) {
-                    do {
-                        try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
-                        try jwt.verifyExpirationDate()
-                        if let token = jwt.payload[ClaimsNames.sessionToken.rawValue] as? String {
-                            session = sessionManager.resume(token: token)
-                        }
-                    }catch{
-                        print(error)
-                    }
+        }else if routeOptions.0 != .guest{
+            createSession = false
+            do {
+                guard var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") else {
+                    throw AuthError.invalidRequest
                 }
+                bearer.removeFirst("Bearer ".count)
+                guard let jwt = JWTVerifier(bearer) else {
+                    throw AuthError.invalidRequest
+                }
+                try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
+                try jwt.verifyExpirationDate()
+                guard let token = jwt.payload[ClaimsNames.sessionToken.rawValue] as? String else {
+                    throw AuthError.invalidRequest
+                }
+                session = sessionManager.resume(token: token)
+            }catch{
+                response.status = .unauthorized
+                response.setHeader(.wwwAuthenticate, value: "Bearer")
+                callback(.halt(request, response))
             }
+        }else{
+            createSession = false
         }
         if !session.token.isEmpty {
             if session.isValid(request) {
+                print("session is valid")
                 request.session = session
                 createSession = false
             } else {
@@ -57,74 +66,71 @@ public struct AuthorizationFilter: HTTPRequestFilter {
             }
         }
         if createSession {
+            print("create session")
             request.session = sessionManager.start(request)
         }
         if routeOptions.0 != .guest && request.session?.userId == 0 {
             if routeOptions.1 == .cookie {
-                response.setHeader(.wwwAuthenticate, value: "BASIC")
+                response.setHeader(.wwwAuthenticate, value: "Basic")
             }else{
-                response.setHeader(.wwwAuthenticate, value: "BEARER")
+                response.setHeader(.wwwAuthenticate, value: "Bearer")
             }
             response.status = .unauthorized
             callback(.halt(request, response))
         }
         callback(.continue(request, response))
-//        guard let h = CSServer.routes.getAllRestrictedRoutes().navigator.findHandler(uri: request.uri, webRequest: request) else {
-//            return callback(.continue(request, response))
-//        }
-//        print(h)
-        guard var header = request.header(.authorization) else {
-            response.completed(status: .custom(code: 403, message: "Not Authorized."))
-            return callback(.halt(request, response))
-        }
-        
-        guard header.starts(with: "Bearer ") else {
-            response.completed(status: .custom(code: 403, message: "Not Authorized."))
-            return callback(.halt(request, response))
-        }
-        
-        do {
-            header.removeFirst(7)
-            
-            guard let jwt = JWTVerifier(header) else {
-                response.completed(status: .custom(code: 403, message: "Not Authorized."))
-                return callback(.halt(request, response))
-            }
-            
-            try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
-            try jwt.verifyExpirationDate()
-
-            try self.addUserCredentialsToRequest(request: request, jwt: jwt)
-        } catch {
-            print("Failed to decode JWT: \(error)")
-            response.completed(status: .custom(code: 403, message: "Not Authorized."))
-            return callback(.halt(request, response))
-        }
-        
-        callback(.continue(request, response))
     }
-    
-  
 
-    private func addUserCredentialsToRequest(request: HTTPRequest, jwt: JWTVerifier) throws {
-        let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
-            MySQLDatabaseConfiguration(
-                database: CSServer.configuration!.masterDBName,
-                host: CSServer.configuration!.host,
-                port: CSServer.configuration!.port,
-                username: CSServer.configuration!.username,
-                password: CSServer.configuration!.password)
-        )
-        if let email = jwt.payload[ClaimsNames.email.rawValue] as? String,
-            let role = jwt.payload[ClaimsNames.role.rawValue] as? Int,
-            let organizationId = jwt.payload[ClaimsNames.org.rawValue] as? Int,
-            let organization = try? db.table(Organization.self).where(\Organization.id == UInt64(organizationId)).first() {
-                let userCredentials = UserCredentials(email: email, userRole: role, organization: organization)
-            request.add(userCredentials: userCredentials)
-        }
-    }
     public static func authFilter(data: [String:Any]) throws -> HTTPRequestFilter {
         AuthorizationFilter()
+    }
+}
+
+struct SessionResponseFilter: HTTPResponseFilter {
+    /// Called once before headers are sent to the client.
+    func filterHeaders(response: HTTPResponse, callback: (HTTPResponseFilterResult) -> ()) {
+        guard let session = response.request.session else {
+            return callback(.continue)
+        }
+        // Zero point in saving an OAuth2 Session because it's not part of the normal session structure!
+
+
+        CSSessionManager().save(session: session)
+        let sessionID = session.token
+
+        // 0.0.6 updates
+        var domain = ""
+        if !CSServer.configuration!.domain.isEmpty {
+            domain = CSServer.configuration!.domain
+        }
+
+        if !sessionID.isEmpty {
+            response.addCookie(HTTPCookie(
+                name: "\(CSServer.configuration!.domain)Session",
+                value: "\(sessionID)",
+                domain: domain,
+                expires: .relativeSeconds(session.idle),
+                path: "/",
+                secure: false,
+                httpOnly: true,
+                sameSite: .lax
+                )
+            )
+            // CSRF Set Cookie
+//            if SessionConfig.CSRF.checkState {
+//                CSRFFilter.setCookie(response)
+//            }
+        }
+
+        callback(.continue)
+        
+    }
+    /// Called zero or more times for each bit of body data which is sent to the client.
+    func filterBody(response: HTTPResponse, callback: (HTTPResponseFilterResult) -> ()) {
+        callback(.continue)
+    }
+    public static func sessionFilter(data: [String:Any]) throws -> HTTPResponseFilter {
+        SessionResponseFilter()
     }
 }
 

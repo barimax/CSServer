@@ -39,13 +39,13 @@ public struct CSServer {
         MySQLSessionConnector.table = "sessions"
     }
     public func start() throws {
-        let sessionDriver = SessionMemoryDriver()
         let server = HTTPServer()
+        CSSessionManager().setup()
         server.serverPort = 80
         server.serverName = "localhost"
         server.addRoutes(Self.routes.getAllRoutes())
-        server.setRequestFilters([sessionDriver.requestFilter] + Self.filters.getRequestFilters())
-        server.setResponseFilters([sessionDriver.responseFilter] + Self.filters.getResponseFilters())
+        server.setRequestFilters(Self.filters.getRequestFilters())
+        server.setResponseFilters(Self.filters.getResponseFilters())
         try server.start()
     }
     public func addToRegister() {

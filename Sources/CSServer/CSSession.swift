@@ -21,6 +21,7 @@ public struct CSSession: Codable, TableNameProvider {
     var token: String = ""
     var userId: UInt64 = 0
     var data: [String:String] = [:]
+    var userCredentials: UserCredentials?
     var userAgent: String = ""
     var ipAddress: String = ""
     var created: Int = 0
@@ -70,6 +71,17 @@ public struct CSSession: Codable, TableNameProvider {
         }
         return res
     }
+    func encodedUserCredentials() -> String {
+        var res: String = "null"
+        do {
+            if let encoded = try String(data: JSONEncoder().encode(self.userCredentials), encoding: .utf8) {
+                res = encoded
+            }
+        }catch{
+            print(error)
+        }
+        return res
+    }
 }
 
 public struct CSSessionManager {
@@ -85,7 +97,7 @@ public struct CSSessionManager {
         return server
     }
     public func setup(){
-        let stmt = "CREATE TABLE IF NOT EXISTS `\(CSSession.tableName)` (`token` varchar(255) NOT NULL, `userId` uint, `created` int NOT NULL DEFAULT 0, `updated` int NOT NULL DEFAULT 0, `idle` int NOT NULL DEFAULT 0, `data` text, `ipAddress` varchar(255), `userAgent` text, PRIMARY KEY (`token`));"
+        let stmt = "CREATE TABLE IF NOT EXISTS `\(CSSession.tableName)` (`token` varchar(255) NOT NULL, `userId` bigint unsigned not null default 0, `created` int NOT NULL DEFAULT 0, `updated` int NOT NULL DEFAULT 0, `idle` int NOT NULL DEFAULT 0, `data` text, `ipAddress` varchar(255), `userAgent` text, `userCredentials` text, PRIMARY KEY (`token`));"
         exec(stmt, params: [])
     }
 
@@ -104,15 +116,20 @@ public struct CSSessionManager {
         let stmt = "DELETE FROM \(CSSession.tableName) WHERE updated + idle < ?"
         exec(stmt, params: [Int(Date().timeIntervalSince1970)])
     }
+    func cleanByUser(userId: UInt64) {
+        let stmt = "DELETE FROM \(CSSession.tableName) WHERE userId = ?"
+        exec(stmt, params: [userId])
+    }
     public func save(session: CSSession) {
         var s = session
         s.touch()
-        let stmt = "UPDATE \(CSSession.tableName) SET userid = ?, updated = ?, idle = ?, data = ? WHERE token = ?"
+        let stmt = "UPDATE \(CSSession.tableName) SET userid = ?, updated = ?, idle = ?, data = ?, userCredentials = ? WHERE token = ?"
         exec(stmt, params: [
             s.userId,
             s.updated,
             s.idle,
             s.toJSON(),
+            s.encodedUserCredentials(),
             s.token
         ])
     }
@@ -123,7 +140,7 @@ public struct CSSessionManager {
         session.userAgent = request.header(.userAgent) ?? "unknown"
         session.setCSRF()
         // perform INSERT
-        let stmt = "INSERT INTO \(CSSession.tableName) (token, userid, created, updated, idle, data, ipaddress, useragent) VALUES(?,?,?,?,?,?,?,?)"
+        let stmt = "INSERT INTO \(CSSession.tableName) (token, userid, created, updated, idle, data, ipaddress, useragent, userCredentials) VALUES(?,?,?,?,?,?,?,?,?)"
         exec(stmt, params: [
             session.token,
             session.userId,
@@ -132,7 +149,8 @@ public struct CSSessionManager {
             session.idle,
             session.toJSON(),
             session.ipAddress,
-            session.userAgent
+            session.userAgent,
+            session.encodedUserCredentials()
             ])
         return session
     }
@@ -154,7 +172,7 @@ public struct CSSessionManager {
             domain: domain,
             expires: .relativeSeconds(86400),
             path: "/",
-            secure: true,
+            secure: false,
             httpOnly: true,
             sameSite: .lax
             )
@@ -166,7 +184,7 @@ public struct CSSessionManager {
         let server = connect()
         let params = [token]
         let lastStatement = MySQLStmt(server)
-        let _ = lastStatement.prepare(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent FROM \(CSSession.tableName) WHERE token = ?")
+        let _ = lastStatement.prepare(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent, userCredentials FROM \(CSSession.tableName) WHERE token = ?")
         for p in params {
             lastStatement.bindParam("\(p)")
         }
@@ -182,6 +200,7 @@ public struct CSSessionManager {
             session.data = (try? JSONDecoder().decode([String:String].self, from: (row[5] as! String).data(using: .utf8)!)) ?? [:]
             session.ipAddress = row[6] as! String
             session.userAgent = row[7] as! String
+            session.userCredentials = (try? JSONDecoder().decode(UserCredentials.self, from: (row[8] as! String).data(using: .utf8)!))
         }
         return session
     }

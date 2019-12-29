@@ -83,15 +83,6 @@
         }
       },
       {
-        "package": "PerfectLogger",
-        "repositoryURL": "https://github.com/barimax/Perfect-Logger.git",
-        "state": {
-          "branch": null,
-          "revision": "541fb1ae0c65ee28c4c9f15747e37668d2f14ddb",
-          "version": "4.0.0"
-        }
-      },
-      {
         "package": "PerfectMIME",
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MIME.git",
         "state": {
@@ -114,8 +105,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MySQL.git",
         "state": {
           "branch": null,
-          "revision": "ac24dd4c551a8d2848c1ab2ef76524bb490e07b4",
-          "version": "3.5.0"
+          "revision": "fe63085fe4639944657bf2f33b775e8036974eef",
+          "version": "3.5.1"
         }
       },
       {
@@ -134,24 +125,6 @@
           "branch": null,
           "revision": "d00b2b9f4cccb4c398e1bcf18f767d6b8add6af7",
           "version": "3.3.0"
-        }
-      },
-      {
-        "package": "PerfectSession",
-        "repositoryURL": "https://github.com/barimax/Perfect-Session.git",
-        "state": {
-          "branch": "master",
-          "revision": "8c16cdf7466c7899a148d33078f83671ea3d9be9",
-          "version": null
-        }
-      },
-      {
-        "package": "PerfectSessionMySQL",
-        "repositoryURL": "https://github.com/barimax/Perfect-Session-MySQL.git",
-        "state": {
-          "branch": "master",
-          "revision": "1d84bae852d89596d32aa2f789326cb79ee7c1e6",
-          "version": null
         }
       },
       {

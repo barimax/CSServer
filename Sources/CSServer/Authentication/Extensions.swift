@@ -50,17 +50,8 @@ extension String {
             return Int(arc4random())
         #endif
     }
-
 }
-extension HTTPRequest {
-    func add(userCredentials: UserCredentials) {
-        self.scratchPad["userCredentials"] = userCredentials
-    }
 
-    func getUserCredentials() -> UserCredentials? {
-        return self.scratchPad["userCredentials"] as? UserCredentials
-    }
-}
 extension JWTVerifier {
     
     public func verifyExpirationDate() throws {

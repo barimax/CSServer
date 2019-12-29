@@ -10,13 +10,88 @@ import PerfectHTTP
 
 extension CSRoutes {
     static func load() {
-        
+        /// Registration and authentication
+        /// Registration API endpoint HTTP method="POST", accepts HTTP header Content-Type="application/json" and json body:
+        /// - email: String
+        /// - password: String - should be checked in front end
+        /// - orgName: String
+        /// - orgAddress: String
+        /// - orgEIK: String - must be valid Bulgarian commercial id number
+        /// - orgMOL: String
+        /// - orgDescription: String
+        /// Registration API endpoint returns on success HTTP header Content-Type="application/json" and json body:
+        /// - type: "json",
+        /// - body: Object:
+        /// - email: String - the same as in the registration request body
+        /// - userId: Number(UInt64) - the database id of the registred user
+        /// - isValidated: Bool - indicates if user email is verified
+        /// On fail registration API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.add(method: .post, uri: "/registration", handler: AuthHandlers.registration, access: .guest, sessionType: .bearer)
-        CSRoutes.add(method: .post, uri: "/login", handler: AuthHandlers.login, access: .guest, sessionType: .bearer)
+        
+        /// Login API endpoint HTTP method="POST", accepts HTTP headers:
+        /// - Content-Type="application/json"
+        /// - Authorization="Bearer  """ - empty string after Bearer is a must
+        /// - JSON body:
+        /// - email: String
+        /// - password: String
+        /// On success login API enpoint returns HTTP header Content-Type="application/json" and try to set a cookie named [domain]Session containg session ID. Returns JSON body:
+        /// - type: "json",
+        /// - body: Object:
+        /// - email: String - the same as in the registration request body
+        /// - isValidated: Bool - indicates if user email is verified
+        /// - userId: Number(UInt64) - the database id of the registred user
+        /// - token (Optional): String - This property apear only  if user email is verified and contains newly created Bearer token. Must check for existance and  include the token in all request to access.
+        /// On fail login API endpoint returns HTTP error code (not ok 200) with description
+        CSRoutes.add(method: .post, uri: "/api/v1/login", handler: AuthHandlers.bearerLogin, access: .guest, sessionType: .bearer)
+        
+        /// Web login URL HTTP method="POST", accepts HTTP header Authorization="Basic  [base64 encoded username and password]"
+        /// On success returns html body
+        /// On fail web login  returns HTTP error code (not ok 200) with description
+        CSRoutes.add(method: .post, uri: "/login", handler: AuthHandlers.login, access: .guest, sessionType: .cookie)
+        
+        /// Reset password API enpoint HTTP method="POST", accepts HTTP header Content-Type="application/json" and JSON body:
+        /// - email: String
+        /// Reset password API endpoint returns on success HTTP header Content-Type="application/json" and json body:
+        /// - type: "json",
+        /// - body: Object:
+        /// - email: String - the same as in the registration request body
+        /// On fail reset password API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.add(method: .post, uri: "/resetPassword", handler: AuthHandlers.resetPassword, access: .guest, sessionType: .bearer)
+        
+        /// Email validation HTTP method="GET" web URL parameter s=[validationString]
+        /// Email validation webURL returns on success HTTP header Content-Type="application/json" and json body:
+        /// - type: "json",
+        /// - body: Object:
+        /// - email: String - the same as in the registration request body
+        /// - userId: Number(UInt64) - the database id of the registred user
+        /// - isValidated: Bool = true
+        /// On fail email validation webURL returns HTTP error code (not ok 200) with description
         CSRoutes.add(method: .get, uri: "/emailValidation", handler: AuthHandlers.validateEmail, access: .guest, sessionType: .bearer)
+        
+        /// Resend validation email API endpoint HTTP method="POST", accepts HTTP header Content-Type="application/json" and json body:
+        /// - email: String
+        /// Registration API endpoint returns on success HTTP header Content-Type="application/json" and json body:
+        /// - type: "bool"
+        /// - body: Bool
+        /// On fail resend validation email API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.add(method: .post, uri: "/resendValidationEmail", handler: AuthHandlers.resendVaidationEmail, access: .guest, sessionType: .bearer)
+        
+        /// Change password API endpoint HTTP method="POST", accepts HTTP headers:
+        /// - Content-Type="application/json"
+        /// - Authorization="Bearer  [token]" - must be logged to change password
+        /// - JSON body:
+        /// - oldPassword: String
+        /// - newPassword: String
+        /// Change password  API endpoint returns on success HTTP header Content-Type="application/json" and json body:
+        /// - type: "json",
+        /// - body: Object:
+        /// - email: String - the same as in the registration request body
+        /// - userId: Number(UInt64) - the database id of the registred user
+        /// - isValidated: Bool - indicates if user email is verified
+        /// On fail change password  API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.addToSuperUser(method: .post, uri: "/changePassword", handler: AuthHandlers.changePassword)
+        
+        
         CSRoutes.add(method: .get, uri: "/**", handler: AuthHandlers.loginForm, access: .guest, sessionType: .cookie)
     }
 }

@@ -48,5 +48,6 @@ public struct CSFilters {
 extension CSFilters {
     static func load() {
         Self.requestFilters.append((AuthorizationFilter(), .high))
+        Self.responseFilters.append((SessionResponseFilter(), .high))
     }
 }
