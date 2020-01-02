@@ -27,6 +27,7 @@ public struct CSSession: Codable, TableNameProvider {
     var created: Int = 0
     var updated: Int = 0
     var idle: Int = 86400
+    var state: String = "recover"
     
     /// Compares the timestamps and idle to determine if session has expired
     public func isValid(_ request:HTTPRequest) -> Bool {
@@ -98,6 +99,7 @@ public struct CSSessionManager {
     }
     public func setup(){
         let stmt = "CREATE TABLE IF NOT EXISTS `\(CSSession.tableName)` (`token` varchar(255) NOT NULL, `userId` bigint unsigned not null default 0, `created` int NOT NULL DEFAULT 0, `updated` int NOT NULL DEFAULT 0, `idle` int NOT NULL DEFAULT 0, `data` text, `ipAddress` varchar(255), `userAgent` text, `userCredentials` text, PRIMARY KEY (`token`));"
+        // print(stmt)
         exec(stmt, params: [])
     }
 
@@ -138,6 +140,7 @@ public struct CSSessionManager {
         var session = CSSession(token: UUID().uuidString)
         session.ipAddress = request.remoteAddress.host
         session.userAgent = request.header(.userAgent) ?? "unknown"
+        session.state = "new"
         session.setCSRF()
         // perform INSERT
         let stmt = "INSERT INTO \(CSSession.tableName) (token, userid, created, updated, idle, data, ipaddress, useragent, userCredentials) VALUES(?,?,?,?,?,?,?,?,?)"
@@ -242,6 +245,7 @@ extension HTTPRequest {
 
     public func getCookie(name: String) -> String? {
         for (cookieName, payload) in self.cookies {
+            print(cookieName)
             if name == cookieName {
                 return payload
             }

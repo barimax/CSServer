@@ -19,24 +19,22 @@ public struct CSServer {
         Self.filters.load()
         // The name of the session.
         // This will also be the name of the cookie set in a browser.
-        SessionConfig.name = "\(c.domain)Session"
+        CSSessionConfig.name = "\(c.domain)Session"
         // The "Idle" time for the session, in seconds.
         // 86400 is one day.
-        SessionConfig.idle = 86400
+        CSSessionConfig.idle = 86400
         // Optional cookie domain setting
-        SessionConfig.cookieDomain = c.domain
+        CSSessionConfig.cookieDomain = c.domain
         // Optional setting to lock session to the initiating IP address. Default is false
-        SessionConfig.IPAddressLock = false
+        CSSessionConfig.IPAddressLock = false
         // Optional setting to lock session to the initiating user agent string. Default is false
-        SessionConfig.userAgentLock = false
+        CSSessionConfig.userAgentLock = false
         // The interval at which stale sessions are purged from the database
-        SessionConfig.purgeInterval = 3600 // in seconds. Default is 1 hour.
-        MySQLSessionConnector.host = dbConfig.host
-        MySQLSessionConnector.port = dbConfig.port
-        MySQLSessionConnector.username = dbConfig.username
-        MySQLSessionConnector.password = dbConfig.password
-        MySQLSessionConnector.database = c.masterDBName
-        MySQLSessionConnector.table = "sessions"
+        CSSessionConfig.purgeInterval = 3600 // in seconds. Default is 1 hour.
+        CSSessionConfig.CSRF.checkState = true
+        CSSessionConfig.CSRF.acceptableHostnames = ["localhost"]
+        CSSessionConfig.CORS.enabled = true
+        CSSessionConfig.CORS.acceptableHostnames = ["*"]
     }
     public func start() throws {
         let server = HTTPServer()

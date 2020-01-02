@@ -70,6 +70,7 @@ extension Authentication {
         }
         let newPassword: String = String(randomWithLength: 8)
         user.password = try newPassword.generateHash(salt: user.salt)
+        print("new password: \(user.password)")
         try db.transaction {
             try db.table(User.self).where(\User.id == user.id).update(user)
             Utility.sendMail(
