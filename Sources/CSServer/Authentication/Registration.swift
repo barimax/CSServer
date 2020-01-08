@@ -11,7 +11,6 @@ import PerfectCRUD
 import PerfectMySQL
 import PerfectCrypto
 import CSCoreView
-import SwiftMoment
 import PerfectMustache
 
 
@@ -117,8 +116,9 @@ extension Authentication {
                 username: CSServer.configuration!.username,
                 password: CSServer.configuration!.password)
         )
-        let yesterday = moment().subtract(1, .Days).date
-        guard var user: User = try? db.table(User.self).where(\User.validationString == validationString && \User.timestamp! > yesterday).first() else {
+        
+        guard let yesterday = Calendar.current.date(byAdding: DateComponents(day: -1), to: Date()),
+            var user: User = try? db.table(User.self).where(\User.validationString == validationString && \User.timestamp! > yesterday).first() else {
             try db.transaction {
                 let query = db.table(User.self).where(\User.validationString == validationString)
                 if let user = try query.first(), user.isLocked {

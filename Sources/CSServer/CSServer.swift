@@ -1,8 +1,6 @@
 import PerfectHTTPServer
 import CSCoreView
 import Foundation
-import PerfectSession
-import PerfectSessionMySQL
 
 public struct CSServer {
     public static var configuration: Configuration?

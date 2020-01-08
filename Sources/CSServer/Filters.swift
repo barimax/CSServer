@@ -7,7 +7,6 @@
 
 import Foundation
 import PerfectHTTP
-import PerfectSessionMySQL
 
 func filters() -> [[String: Any]] {
     
