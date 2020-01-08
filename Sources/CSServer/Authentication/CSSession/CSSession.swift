@@ -137,7 +137,8 @@ public struct CSSessionManager {
     }
 
     public func start(_ request: HTTPRequest) -> CSSession {
-        var session = CSSession(token: UUID().uuidString)
+        var session = CSSession()
+        session.token = UUID().uuidString
         session.ipAddress = request.remoteAddress.host
         session.userAgent = request.header(.userAgent) ?? "unknown"
         session.state = "new"
@@ -183,7 +184,8 @@ public struct CSSessionManager {
     }
 
     public func resume(token: String) -> CSSession {
-        var session = CSSession(token: token)
+        var session = CSSession()
+        session.token = token
         let server = connect()
         let params = [token]
         let lastStatement = MySQLStmt(server)

@@ -13,8 +13,8 @@ public struct CSServer {
         CSCoreDBConfig.dbConfiguration = dbConfig
         self.addToRegister()
         try CSRegister.setup(withDatabase: c.masterDBName, configuration: dbConfig)
-        Self.routes.load()
-        Self.filters.load()
+        CSServer.routes.load()
+        CSServer.filters.load()
         // The name of the session.
         // This will also be the name of the cookie set in a browser.
         CSSessionConfig.name = "\(c.domain)Session"
@@ -39,9 +39,9 @@ public struct CSServer {
         CSSessionManager().setup()
         server.serverPort = 80
         server.serverName = "localhost"
-        server.addRoutes(Self.routes.getAllRoutes())
-        server.setRequestFilters(Self.filters.getRequestFilters())
-        server.setResponseFilters(Self.filters.getResponseFilters())
+        server.addRoutes(CSServer.routes.getAllRoutes())
+        server.setRequestFilters(CSServer.filters.getRequestFilters())
+        server.setResponseFilters(CSServer.filters.getResponseFilters())
         try server.start()
     }
     public func addToRegister() {

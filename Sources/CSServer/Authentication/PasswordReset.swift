@@ -30,7 +30,9 @@ extension Authentication {
                 username: CSServer.configuration!.username,
                 password: CSServer.configuration!.password)
         )
-        guard let email = request.session?.userCredentials?.email, var user: User = try? db.table(User.self).where(\User.email == email).first() else {
+        guard let email = request.session?.userCredentials?.email,
+            let dbResult = try? db.table(User.self).where(\User.email == email).first(),
+            var user: User = dbResult else {
             throw AuthError.withDescription(message: "User not found.")
         }
         let hashedPassword: String = try decoded.oldPassword.generateHash(salt: user.salt)
@@ -64,8 +66,8 @@ extension Authentication {
                 username: CSServer.configuration!.username,
                 password: CSServer.configuration!.password)
         )
-        guard var user: User = try? db.table(User.self).where(\User.email == decoded.email).first(),
-            let organization = try? db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
+        guard var user: User = try db.table(User.self).where(\User.email == decoded.email).first(),
+            let organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
             throw AuthError.withDescription(message: "User not found.")
         }
         let newPassword: String = String(randomWithLength: 8)

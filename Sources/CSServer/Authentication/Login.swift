@@ -20,7 +20,7 @@ extension Authentication {
             database = userCredentials.organization.dbName
         }
         
-        let loginForm: String = #"<html><h1>Login form</h1><p>\#(userEmail), db: \#(database)</p></html>"#
+        let loginForm: String = "<html><h1>Login form</h1><p>\(userEmail), db: \(database)</p></html>"
         response.setBody(string: loginForm)
         response.completed()
     }
@@ -55,7 +55,7 @@ extension Authentication {
         let sessionManager: CSSessionManager = CSSessionManager()
         sessionManager.cleanByUser(userId: user.id)
         var session: CSSession = sessionManager.start(request)
-        guard let organization: Organization = try? db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
+        guard let organization: Organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
             throw AuthError.withDescription(message: "No organization.")
         }
         let userCredentials: UserCredentials = UserCredentials(
@@ -115,7 +115,7 @@ extension Authentication {
                 username: CSServer.configuration!.username,
                 password: CSServer.configuration!.password)
         )
-        guard let user: User = try? db.table(User.self).where(\User.email == email).first() else {
+        guard let user: User = try db.table(User.self).where(\User.email == email).first() else {
             throw AuthError.withDescription(message: "User not found.")
         }
         let hashedPassword: String = try password.generateHash(salt: user.salt)

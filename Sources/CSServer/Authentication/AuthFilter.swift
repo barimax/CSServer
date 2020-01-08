@@ -111,7 +111,7 @@ public struct AuthorizationFilter: HTTPRequestFilter {
         callback(.continue(request, response))
     }
     public static func authFilter(data: [String:Any]) throws -> HTTPRequestFilter {
-        AuthorizationFilter()
+        return AuthorizationFilter()
     }
 }
 
@@ -159,7 +159,7 @@ struct SessionResponseFilter: HTTPResponseFilter {
         callback(.continue)
     }
     public static func sessionFilter(data: [String:Any]) throws -> HTTPResponseFilter {
-        SessionResponseFilter()
+        return SessionResponseFilter()
     }
 }
 

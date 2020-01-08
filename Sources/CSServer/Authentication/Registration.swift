@@ -118,7 +118,7 @@ extension Authentication {
         )
         
         guard let yesterday = Calendar.current.date(byAdding: DateComponents(day: -1), to: Date()),
-            var user: User = try? db.table(User.self).where(\User.validationString == validationString && \User.timestamp! > yesterday).first() else {
+            var user: User = try db.table(User.self).where(\User.validationString == validationString && \User.timestamp! > yesterday).first() else {
             try db.transaction {
                 let query = db.table(User.self).where(\User.validationString == validationString)
                 if let user = try query.first(), user.isLocked {
@@ -151,8 +151,8 @@ extension Authentication {
                 username: CSServer.configuration!.username,
                 password: CSServer.configuration!.password)
         )
-        guard let user: User = try? db.table(User.self).where(\User.email == decoded.email && \User.isLocked == true).first(),
-            let organization: Organization = try? db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
+        guard let user: User = try db.table(User.self).where(\User.email == decoded.email && \User.isLocked == true).first(),
+            let organization: Organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
             throw AuthError.invalidEmailPassword
         }
         print(user.email)
