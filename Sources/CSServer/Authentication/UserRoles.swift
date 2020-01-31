@@ -8,40 +8,31 @@
 import Foundation
 import CSCoreView
 
-enum UserRole: Int, CSOptionableEnumProtocol {
-    static var registerName: String = "userRole"
+public struct UserRole: CSEntityProtocol, CSOptionableEntityProtocol {
+    public static var optionField: AnyKeyPath = \UserRole.name
     
-    case admin = 1
-    case superUser = 2
-    case user = 3
-    case client = 4
-    case partner = 5
     
-    func getName() -> String? {
-        switch self.rawValue {
-        case 1:
-            return "Administrator"
-        case 2:
-            return "Superuser"
-        case 3:
-            return "User"
-        case 4:
-            return "Client"
-        case 5:
-            return "Partner"
-        default:
-            return nil
-        }
-    }
+    public static var registerName: String = "userRole"
+    public static var singleName: String = "Role"
+    public static var pluralName: String = "Roles"
+    public static var tableName: String = "roles"
+    public static var searchableFields: [AnyKeyPath] = [\UserRole.name]
+    public static var fields: [CSPropertyDescription] = [
+        CSPropertyDescription(keyPath: \UserRole.name, name: "name", label: "Role", ref: nil, fieldType: .text, jsType: .string, colWidth: .normal, required: true, order: 0),
+        CSPropertyDescription(keyPath: \UserRole.permissions, name: "permissions", label: "Permissions", ref: CSPermissions.self, fieldType: .dynamicFormControl, jsType: .object, colWidth: .normal, required: true, order: 0)
+    ]
+    public var id: UInt64
+    public var name: String
+    public var permissions: [CSPermissions]
 }
-enum UserAccessLevel: Int, CSOptionableEnumProtocol {
-    static var registerName: String = "userAccessLevel"
+public enum UserAccessLevel: Int, CSOptionableEnumProtocol {
+    public static var registerName: String = "userAccessLevel"
     
     case readOnly = 1
     case readWrite = 2
     case noAccess = 3
     
-    func getName() -> String? {
+    public func getName() -> String? {
         switch self.rawValue {
         case 1:
             return "Read only"

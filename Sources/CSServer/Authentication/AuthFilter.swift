@@ -19,6 +19,7 @@ struct UserCredentials: Codable {
 public struct AuthorizationFilter: HTTPRequestFilter {
     
     public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
+        print(request.method)
         // skip session check if it is healthCheck URI
         guard CSServer.configuration!.healthyCheckPath != request.uri else {
             return callback(.continue(request, response))
@@ -76,7 +77,7 @@ public struct AuthorizationFilter: HTTPRequestFilter {
             print("Create new session.")
             request.session = sessionManager.start(request)
         }
-        if routeOptions.1 == .cookie || routeOptions.0 != .guest {
+        if routeOptions.1 == .cookie && routeOptions.0 != .guest && request.method != .options {
             // Now process CSRF
             print("CSRF check start here.")
             if request.session?.state != "new" || request.method == .post {
@@ -84,6 +85,7 @@ public struct AuthorizationFilter: HTTPRequestFilter {
                     switch CSSessionConfig.CSRF.failAction {
                     case .fail:
                         response.status = .notAcceptable
+                        print("CSRF FAIL consol log")
                         callback(.halt(request, response))
                         return
                     case .log:
@@ -98,7 +100,9 @@ public struct AuthorizationFilter: HTTPRequestFilter {
             CORSheaders.make(request, response)
         }
         // Check if session is NOT authentificated and halt it
-        if routeOptions.0 != .guest && request.session?.userId == 0 {
+        print(routeOptions)
+        print(!((request.session?.userId ?? 0) > 0))
+        if routeOptions.0 != .guest && !((request.session?.userId ?? 0) > 0) {
             if routeOptions.1 == .cookie {
                 response.setHeader(.wwwAuthenticate, value: "Basic")
             }else{

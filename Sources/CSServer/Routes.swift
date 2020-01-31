@@ -7,6 +7,7 @@
 
 import Foundation
 import PerfectHTTP
+import SwiftString
 
 extension CSRoutes {
     static func load() {
@@ -93,6 +94,12 @@ extension CSRoutes {
         
         
         CSRoutes.add(method: .get, uri: "/**", handler: AuthHandlers.loginForm, access: .guest, sessionType: .cookie)
+        CSRoutes.addToSuperUser(method: .get, uri: "/menu", handler: CSMainHandlers.getMenu)
+        CSRoutes.addToSuperUser(method: .get, uri: "/userRoles", handler: CSMainHandlers.getUserRole)
+        CSRoutes.addToSuperUser(method: .get, uri: "/customData", handler: CSCustomDataHandlers.get)
+        CSRoutes.addToSuperUser(method: .post, uri: "/customData", handler: CSCustomDataHandlers.save)
+        CSRoutes.addToSuperUser(method: .post, uri: "/customData/create", handler: CSCustomDataHandlers.create)
+        CSRoutes.addToSuperUser(method: .get, uri: "/customData/new", handler: CSCustomDataHandlers.new)
     }
 }
 
@@ -136,7 +143,11 @@ public struct CSRoutes {
         return Routes(routes)
     }
     public static func getRouteOptions(uri: String) -> (CSAccessLevel, CSSessionType)? {
-        let rs = self.routes.filter { $0.route.uri == uri }
+        var requestUri = uri
+        if let index = uri.firstIndex(of: "?"){
+            requestUri = String(uri[uri.startIndex..<index])
+        }
+        let rs = self.routes.filter { $0.route.uri == requestUri }
         if rs.count != 1 { return nil }
         return (rs[0].accessLevel, rs[0].sessionType)
     }

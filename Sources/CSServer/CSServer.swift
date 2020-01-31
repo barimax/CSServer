@@ -30,7 +30,7 @@ public struct CSServer {
         // The interval at which stale sessions are purged from the database
         CSSessionConfig.purgeInterval = 3600 // in seconds. Default is 1 hour.
         CSSessionConfig.CSRF.checkState = true
-        CSSessionConfig.CSRF.acceptableHostnames = ["localhost"]
+        CSSessionConfig.CSRF.acceptableHostnames = ["127.0.0.1"]
         CSSessionConfig.CORS.enabled = true
         CSSessionConfig.CORS.acceptableHostnames = ["*"]
     }
@@ -47,6 +47,7 @@ public struct CSServer {
     public func addToRegister() {
         CSRegister.add(forKey: User.registerName, type: User.self)
         CSRegister.add(forKey: Organization.registerName, type: Organization.self)
+        CSRegister.add(forKey: UserRole.registerName, type: UserRole.self)
     }
     
     

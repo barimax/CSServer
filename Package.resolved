@@ -6,7 +6,7 @@
         "repositoryURL": "https://github.com/barimax/CSCoreView.git",
         "state": {
           "branch": "master",
-          "revision": "3e0261f836356a2ff8a5c89fe3baa9fe99b70614",
+          "revision": "28c381dbca1b720f6c0122d48318ed194fa8b0fb",
           "version": null
         }
       },
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MIME.git",
         "state": {
           "branch": null,
-          "revision": "82de01249158431940e95e13b7ba29ca1d54f02a",
-          "version": "1.0.0"
+          "revision": "247246122dd72a8f4d0c7becefb8d69869598bce",
+          "version": "1.1.0"
         }
       },
       {
@@ -152,6 +152,15 @@
           "branch": null,
           "revision": "5a08c2a596df23a3ae30b6ac9cb509a38384166c",
           "version": "3.1.4"
+        }
+      },
+      {
+        "package": "SwiftString",
+        "repositoryURL": "https://github.com/iamjono/SwiftString.git",
+        "state": {
+          "branch": null,
+          "revision": "8017b12c3e20cf8fe4f9b5538a3aaf89562036c2",
+          "version": "2.1.1"
         }
       }
     ]

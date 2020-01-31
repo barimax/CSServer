@@ -101,7 +101,16 @@ extension Authentication {
             try db.table(User.self).where(\User.id == user.id).update(user)
             response.completed(status: .custom(code: 403, message: "Not validated"))
         }
+        guard let organization: Organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
+            throw AuthError.withDescription(message: "No organization.")
+        }
+        let userCredentials: UserCredentials = UserCredentials(
+            email: user.email,
+            userRole: user.userRole,
+            organization: organization
+        )
         request.session?.userId = user.id
+        request.session?.userCredentials = userCredentials
         response.status = .found
         response.setHeader(.location, value: "/")
         response.completed()
