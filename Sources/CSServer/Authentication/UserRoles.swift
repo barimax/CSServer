@@ -18,12 +18,12 @@ public struct UserRole: CSEntityProtocol, CSOptionableEntityProtocol {
     public static var tableName: String = "roles"
     public static var searchableFields: [AnyKeyPath] = [\UserRole.name]
     public static var fields: [CSPropertyDescription] = [
-        CSPropertyDescription(keyPath: \UserRole.name, name: "name", label: "Role", ref: nil, fieldType: .text, jsType: .string, colWidth: .normal, required: true, order: 0),
-        CSPropertyDescription(keyPath: \UserRole.permissions, name: "permissions", label: "Permissions", ref: CSPermissions.self, fieldType: .dynamicFormControl, jsType: .object, colWidth: .normal, required: true, order: 0)
+        CSPropertyDescription(keyPath: \UserRole.name, name: "name", label: "Role", ref: nil, fieldType: .text, jsType: .string, colWidth: .normal, required: true, order: 1),
+        CSPropertyDescription(keyPath: \UserRole.permissions, name: "permissions", label: "Permissions", ref: CSPermissions.self, fieldType: .dynamicFormControl, jsType: .objectsArray, colWidth: .none, required: true, order: 2),
     ]
     public var id: UInt64
     public var name: String
-    public var permissions: [CSPermissions]
+    public var permissions: CSPermissions
 }
 public enum UserAccessLevel: Int, CSOptionableEnumProtocol {
     public static var registerName: String = "userAccessLevel"

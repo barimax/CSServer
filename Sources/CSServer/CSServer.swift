@@ -11,8 +11,9 @@ public struct CSServer {
         let dbConfig = CSCoreDB(host: c.host, username: c.username, password: c.password)
         CSServer.configuration = c
         CSCoreDBConfig.dbConfiguration = dbConfig
+        try self.createMasterTables()
         self.addToRegister()
-        try CSRegister.setup(withDatabase: c.masterDBName, configuration: dbConfig)
+        try self.createClientDatabaseTables()
         CSServer.routes.load()
         CSServer.filters.load()
         // The name of the session.
@@ -36,7 +37,7 @@ public struct CSServer {
     }
     public func start() throws {
         let server = HTTPServer()
-        CSSessionManager().setup()
+        try CSSessionManager().setup()
         server.serverPort = 80
         server.serverName = "localhost"
         server.addRoutes(CSServer.routes.getAllRoutes())
@@ -45,11 +46,19 @@ public struct CSServer {
         try server.start()
     }
     public func addToRegister() {
-        CSRegister.add(forKey: User.registerName, type: User.self)
-        CSRegister.add(forKey: Organization.registerName, type: Organization.self)
+//        CSRegister.add(forKey: User.registerName, type: User.self)
         CSRegister.add(forKey: UserRole.registerName, type: UserRole.self)
     }
-    
+    private func createMasterTables() throws {
+        try User.view(CSServer.configuration!.masterDBName).create()
+        try Organization.view(CSServer.configuration!.masterDBName).create()
+    }
+    private func createClientDatabaseTables() throws {
+        let organizations: [Organization] = try Organization.view(CSServer.configuration!.masterDBName).getAll() as! [Organization]
+        for o in organizations {
+            try CSRegister.setup(withDatabase: o.dbName, host: CSServer.configuration!.host, username: CSServer.configuration!.username, password: CSServer.configuration!.password)
+        }
+    }
     
 }
 

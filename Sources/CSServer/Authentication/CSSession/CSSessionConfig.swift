@@ -106,7 +106,7 @@ public struct CSSessionConfig {
         public var acceptableHostnames = [String]()
 
         /// Array of acceptable methods
-        public var methods: [HTTPMethod] = [.get]
+        public var methods: [HTTPMethod] = [.get, .post]
 
         /// An array of custom headers allowed
         public var customHeaders = [String]()

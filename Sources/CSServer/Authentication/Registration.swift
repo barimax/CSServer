@@ -25,6 +25,25 @@ extension Authentication {
     }
     
     
+    func registrationForm(request: HTTPRequest, response: HTTPResponse) throws -> String {
+        let templatePath = "\(CSServer.configuration!.template)/registrationForm.mustache"
+        guard let csrf = request.session?.data["csrf"] else {
+            throw AuthError.invalidRequest
+        }
+        
+        let map: [String:Any] = ["csrf":csrf]
+        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
+        let collector = MustacheEvaluationOutputCollector()
+        return try context.formulateResponse(withCollector: collector)
+    }
+    private func validationResult(request: HTTPRequest, response: HTTPResponse) throws -> String {
+        let templatePath = "\(CSServer.configuration!.template)/validationResult.mustache"
+        let map: [String:Any] = [:]
+        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
+        let collector = MustacheEvaluationOutputCollector()
+        return try context.formulateResponse(withCollector: collector)
+    }
+    
     func registration(request: HTTPRequest, response: HTTPResponse) throws {
         struct RegistrationBody: Decodable {
             let email: String
@@ -35,12 +54,18 @@ extension Authentication {
             let orgMOL: String
             let orgDescription: String
         }
-        
+        let utility = Utility()
         guard let requestBody = request.postBodyString,
             let data = requestBody.data(using: .utf8) else {
             throw AuthError.invalidRequest
         }
         let decoded = try JSONDecoder().decode(RegistrationBody.self, from: data)
+        if decoded.email == "" || decoded.password == "" || decoded.orgName == "" || decoded.orgAddress == "" || decoded.orgEIK == "" || decoded.orgMOL == "" {
+            throw AuthError.invalidRequest
+        }
+        if !utility.idValidation(str: decoded.orgEIK) {
+            throw AuthError.withDescription(message: "Not valid company idetification number.")
+        }
         let db: Database<MySQLDatabaseConfiguration> = try Database(configuration:
             MySQLDatabaseConfiguration(
                 database: CSServer.configuration!.masterDBName,
@@ -73,6 +98,8 @@ extension Authentication {
             guard try db.table(Organization.self).where(\Organization.eik == decoded.orgEIK).count() == 0 else {
                 throw AuthError.organizationExists
             }
+            try db.sql("CREATE DATABASE `\(dbName)` CHARACTER SET utf8 COLLATE utf8_general_ci")
+            try CSRegister.setup(withDatabase: dbName, host: CSServer.configuration!.host, username: CSServer.configuration!.username, password: CSServer.configuration!.password)
             guard let newOrgId: UInt64 = try db.table(Organization.self).insert(organization).lastInsertId() else {
                 throw AuthError.passwordGeneratorError
             }
@@ -80,7 +107,7 @@ extension Authentication {
             let hashedPassword: String = try decoded.password.generateHash(salt: salt)
             let user = User(id: 0,
                             organizationId: newOrgId,
-                            name: "No name",
+                            name: "",
                             email: decoded.email,
                             password: hashedPassword,
                             phone: "",
@@ -93,7 +120,7 @@ extension Authentication {
             try db.table(User.self).insert(user)
         }
         let user = try db.table(User.self).where(\User.email == decoded.email).first()!
-        Utility.sendMail(
+        utility.sendMail(
             name: organization.name,
             address: user.email,
             subject: "Validate email",
@@ -130,9 +157,21 @@ extension Authentication {
             throw AuthError.notValidatedEmail
         }
         user.isLocked = false
+        if user.password.isEmpty,
+            let organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first(){
+            let newPassword: String = String(randomWithLength: 8)
+            user.password = try newPassword.generateHash(salt: user.salt)
+            Utility().sendMail(
+                name: organization.name,
+                address: user.email,
+                subject: "New password",
+                html: try self.resetPasswordEmail(newPassword: newPassword),
+                text: ""
+            )
+        }
         try db.table(User.self).where(\User.id == user.id).update(user)
-        let resp: AuthResponse = AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked)
-        response.sendResponse(body: resp, responseType: .json)
+        try response.setBody(string: self.validationResult(request: request, response: response))
+        response.completed()
     }
     func resendVaidationEmail(request: HTTPRequest, response: HTTPResponse) throws {
         struct ResendEmail: Codable {
@@ -156,7 +195,7 @@ extension Authentication {
             throw AuthError.invalidEmailPassword
         }
         print(user.email)
-        Utility.sendMail(
+        Utility().sendMail(
             name: organization.name,
             address: user.email,
             subject: "Validate email",

@@ -12,6 +12,18 @@ import PerfectCRUD
 import PerfectMustache
 
 extension Authentication {
+    func passwordResetForm(request: HTTPRequest, response: HTTPResponse) throws -> String {
+        let templatePath = "\(CSServer.configuration!.template)/passwordResetForm.mustache"
+        guard let csrf = request.session?.data["csrf"] else {
+            throw AuthError.invalidRequest
+        }
+        
+        let map: [String:Any] = ["csrf":csrf]
+        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
+        let collector = MustacheEvaluationOutputCollector()
+        return try context.formulateResponse(withCollector: collector)
+    }
+    
     func passwordChange(request: HTTPRequest, response: HTTPResponse) throws {
         struct PasswordChangeBody: Decodable {
             let oldPassword: String
@@ -72,24 +84,23 @@ extension Authentication {
         }
         let newPassword: String = String(randomWithLength: 8)
         user.password = try newPassword.generateHash(salt: user.salt)
-        print("new password: \(user.password)")
         try db.transaction {
             try db.table(User.self).where(\User.id == user.id).update(user)
-            Utility.sendMail(
+            Utility().sendMail(
                 name: organization.name,
                 address: user.email,
-                subject: "Validate email",
+                subject: "Password reset",
                 html: try self.resetPasswordEmail(newPassword: newPassword),
                 text: ""
             )
         }
         response.sendResponse(body: PasswordResetResponse(email: user.email), responseType: .json)
     }
-    private func resetPasswordEmail(newPassword: String) throws -> String {
+    func resetPasswordEmail(newPassword: String) throws -> String {
         let templatePath = "\(CSServer.configuration!.template)/resetPassword.mustache"
         let map: [String:Any] = [
             "password": newPassword,
-            "domainURL": CSServer.configuration!.domainURL
+            "domainURL": CSServer.configuration!.domainURL,
         ]
         let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
         let collector = MustacheEvaluationOutputCollector()

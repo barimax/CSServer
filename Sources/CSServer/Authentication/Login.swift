@@ -10,22 +10,25 @@ import PerfectHTTP
 import PerfectCRUD
 import PerfectMySQL
 import PerfectCrypto
+import PerfectMustache
 
 extension Authentication {
-    func loginForm(request: HTTPRequest, response: HTTPResponse) {
-        var userEmail: String = ""
-        var database: String = ""
-        if let userCredentials = request.session?.userCredentials {
-            userEmail = userCredentials.email
-            database = userCredentials.organization.dbName
+    func loginForm(request: HTTPRequest, response: HTTPResponse) throws -> String {
+        let templatePath = "\(CSServer.configuration!.template)/loginForm.mustache"
+        guard let csrf = request.session?.data["csrf"] else {
+            throw AuthError.invalidRequest
         }
-        
-        let loginForm: String = "<html><h1>Login form</h1><p>\(userEmail), db: \(database)</p></html>"
-        response.setBody(string: loginForm)
-        response.completed()
+        if let userId = request.session?.userId, userId > 0 && request.session?.userCredentials?.userRole == 3 {
+            CSMainHandlers.staticWebrootFile(request: request, response)
+        }
+        let map: [String:Any] = ["csrf":csrf]
+        let context = MustacheEvaluationContext(templatePath: templatePath, map: map)
+        let collector = MustacheEvaluationOutputCollector()
+        return try context.formulateResponse(withCollector: collector)
     }
     func bearerLogin(request: HTTPRequest, response: HTTPResponse) throws {
-        guard let bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") else {
+        guard let bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer") else {
+            print("Headers error.")
             throw AuthError.invalidRequest
         }
         struct LoginBody: Decodable {
@@ -49,12 +52,12 @@ extension Authentication {
         if user.isLocked {
             user.timestamp = Date()
             try db.table(User.self).where(\User.id == user.id).update(user)
-            let resp: AuthResponse = AuthResponse(userId: user.id, email: user.email, isValidated: !user.isLocked)
-            response.sendResponse(body: resp, responseType: .json)
+            response.status = .custom(code: 499, message: "notValidatedEmail")
+            response.completed()
         }
-        let sessionManager: CSSessionManager = CSSessionManager()
-        sessionManager.cleanByUser(userId: user.id)
-        var session: CSSession = sessionManager.start(request)
+        let sessionManager: CSSessionManager = try CSSessionManager()
+        try sessionManager.cleanByUser(userId: user.id)
+        var session: CSSession = try sessionManager.start(request)
         guard let organization: Organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
             throw AuthError.withDescription(message: "No organization.")
         }
@@ -96,10 +99,12 @@ extension Authentication {
                 password: CSServer.configuration!.password)
         )
         var user = try self.getAuthUser(email: email, password: password)
+        let sessionManager: CSSessionManager = try CSSessionManager()
+        try sessionManager.cleanByUser(userId: user.id)
         if user.isLocked {
             user.timestamp = Date()
             try db.table(User.self).where(\User.id == user.id).update(user)
-            response.completed(status: .custom(code: 403, message: "Not validated"))
+            response.completed(status: .custom(code: 499, message: "Not validated email."))
         }
         guard let organization: Organization = try db.table(Organization.self).where(\Organization.id == user.organizationId).first() else {
             throw AuthError.withDescription(message: "No organization.")
@@ -111,7 +116,7 @@ extension Authentication {
         )
         request.session?.userId = user.id
         request.session?.userCredentials = userCredentials
-        response.status = .found
+        response.status = .ok
         response.setHeader(.location, value: "/")
         response.completed()
     }

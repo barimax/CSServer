@@ -7,6 +7,7 @@
 
 import Foundation
 import PerfectHTTP
+import PerfectHTTPServer
 
 //func filters() -> [[String: Any]] {
 //
@@ -48,5 +49,6 @@ extension CSFilters {
     static func load() {
         CSFilters.requestFilters.append((AuthorizationFilter(), HTTPFilterPriority.high))
         CSFilters.responseFilters.append((SessionResponseFilter(), .high))
+        CSFilters.responseFilters.append((try! PerfectHTTPServer.HTTPFilter.contentCompression(data: [:]),.high))
     }
 }

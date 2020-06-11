@@ -17,7 +17,7 @@ public struct CSSessionConfiguration {
 
 public struct CSSession: Codable, TableNameProvider {
     public static let tableName: String = "sessions"
-    
+//    var id: UInt64 = 0
     var token: String = ""
     var userId: UInt64 = 0
     var data: [String:String] = [:]
@@ -86,7 +86,19 @@ public struct CSSession: Codable, TableNameProvider {
 }
 
 public struct CSSessionManager {
+    let db: Database<MySQLDatabaseConfiguration>
+    init() throws {
+        self.db = try Database(
+            configuration: MySQLDatabaseConfiguration(
+                database: CSServer.configuration!.masterDBName,
+                host: CSServer.configuration!.host,
+                port: CSServer.configuration!.port,
+                username: CSServer.configuration!.username,
+                password: CSServer.configuration!.password
+        ))
+    }
     func connect() -> MySQL {
+        
         let server = MySQL()
         let _ = server.connect(
             host: CSServer.configuration!.host,
@@ -97,10 +109,13 @@ public struct CSSessionManager {
         )
         return server
     }
-    public func setup(){
-        let stmt = "CREATE TABLE IF NOT EXISTS `\(CSSession.tableName)` (`token` varchar(255) NOT NULL, `userId` bigint unsigned not null default 0, `created` int NOT NULL DEFAULT 0, `updated` int NOT NULL DEFAULT 0, `idle` int NOT NULL DEFAULT 0, `data` text, `ipAddress` varchar(255), `userAgent` text, `userCredentials` text, PRIMARY KEY (`token`));"
-        // print(stmt)
-        exec(stmt, params: [])
+    public func setup() throws {
+//        let stmt = "CREATE TABLE IF NOT EXISTS `\(CSSession.tableName)` (`token` varchar(255) NOT NULL, `userId` bigint unsigned not null default 0, `created` int NOT NULL DEFAULT 0, `updated` int NOT NULL DEFAULT 0, `idle` int NOT NULL DEFAULT 0, `data` text, `ipAddress` varchar(255), `userAgent` text, `userCredentials` text, PRIMARY KEY (`token`));"
+//        // print(stmt)
+//        exec(stmt, params: [])
+        try db.create(CSSession.self)
+//        try db.create(CSSession.self, primaryKey: \CSSession.token, policy: nil)
+//        try db.create(CSSession.self, primaryKey: \.token, policy: TableCreatePolicy.defaultPolicy)
     }
 
     func exec(_ statement: String, params: [Any]) {
@@ -114,56 +129,60 @@ public struct CSSessionManager {
         let _ = lastStatement.results()
     }
     
-    func clean() {
-        let stmt = "DELETE FROM \(CSSession.tableName) WHERE updated + idle < ?"
-        exec(stmt, params: [Int(Date().timeIntervalSince1970)])
+    func clean() throws {
+//        let stmt = "DELETE FROM \(CSSession.tableName) WHERE updated + idle < ?"
+//        exec(stmt, params: [Int(Date().timeIntervalSince1970)])
+        try db.table(CSSession.self).where(\CSSession.updated < Int(Date().timeIntervalSince1970)).delete()
     }
-    func cleanByUser(userId: UInt64) {
-        let stmt = "DELETE FROM \(CSSession.tableName) WHERE userId = ?"
-        exec(stmt, params: [userId])
+    func cleanByUser(userId: UInt64) throws {
+//        let stmt = "DELETE FROM \(CSSession.tableName) WHERE userId = ?"
+//        exec(stmt, params: [userId])
+        try db.table(CSSession.self).where(\CSSession.userId == userId).delete()
     }
-    public func save(session: CSSession) {
+    public func save(session: CSSession) throws {
         var s = session
         s.touch()
-        let stmt = "UPDATE \(CSSession.tableName) SET userid = ?, updated = ?, idle = ?, data = ?, userCredentials = ? WHERE token = ?"
-        exec(stmt, params: [
-            s.userId,
-            s.updated,
-            s.idle,
-            s.toJSON(),
-            s.encodedUserCredentials(),
-            s.token
-        ])
+//        let stmt = "UPDATE \(CSSession.tableName) SET userid = ?, updated = ?, idle = ?, data = ?, userCredentials = ? WHERE token = ?"
+//        exec(stmt, params: [
+//            s.userId,
+//            s.updated,
+//            s.idle,
+//            s.toJSON(),
+//            s.encodedUserCredentials(),
+//            s.token
+//        ])
+        try db.table(CSSession.self).where(\CSSession.token == s.token).update(s)
     }
 
-    public func start(_ request: HTTPRequest) -> CSSession {
+    public func start(_ request: HTTPRequest) throws -> CSSession {
         var session = CSSession()
         session.token = UUID().uuidString
+        session.created = Int(Date().timeIntervalSince1970)
         session.ipAddress = request.remoteAddress.host
         session.userAgent = request.header(.userAgent) ?? "unknown"
         session.state = "new"
         session.setCSRF()
         // perform INSERT
-        let stmt = "INSERT INTO \(CSSession.tableName) (token, userid, created, updated, idle, data, ipaddress, useragent, userCredentials) VALUES(?,?,?,?,?,?,?,?,?)"
-        exec(stmt, params: [
-            session.token,
-            session.userId,
-            session.created,
-            session.updated,
-            session.idle,
-            session.toJSON(),
-            session.ipAddress,
-            session.userAgent,
-            session.encodedUserCredentials()
-            ])
+//        let stmt = "INSERT INTO \(CSSession.tableName) (token, userid, created, updated, idle, data, ipaddress, useragent, userCredentials) VALUES(?,?,?,?,?,?,?,?,?)"
+//        exec(stmt, params: [
+//            session.token,
+//            session.userId,
+//            session.created,
+//            session.updated,
+//            session.idle,
+//            session.toJSON(),
+//            session.ipAddress,
+//            session.userAgent,
+//            session.encodedUserCredentials()
+//            ])
+        try db.table(CSSession.self).insert(session)
         return session
     }
 
     /// Deletes the session for a session identifier.
     public func destroy(_ request: HTTPRequest, _ response: HTTPResponse) {
-        let stmt = "DELETE FROM \(CSSession.tableName) WHERE token = ?"
         if let t = request.session?.token {
-            exec(stmt, params: [t])
+            let _ = try? db.table(CSSession.self).where(\CSSession.token == t).delete()
         }
         // Reset cookie to make absolutely sure it does not get recreated in some circumstances.
         var domain = ""
@@ -184,28 +203,34 @@ public struct CSSessionManager {
     }
 
     public func resume(token: String) -> CSSession {
+//        var session = CSSession()
+//        session.token = token
+//        let server = connect()
+//        let params = [token]
+//        let lastStatement = MySQLStmt(server)
+//        let _ = lastStatement.prepare(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent, userCredentials FROM \(CSSession.tableName) WHERE token = ?")
+//        for p in params {
+//            lastStatement.bindParam("\(p)")
+//        }
+//        _ = lastStatement.execute()
+//        let result = lastStatement.results()
+//        _ = result.forEachRow { row in
+//
+//            session.token = row[0] as! String
+//            session.userId = row[1] as! UInt64
+//            session.created = Int(row[2] as! Int32)
+//            session.updated = Int(row[3] as! Int32)
+//            session.idle = Int(row[4] as! Int32)
+//            session.data = (try? JSONDecoder().decode([String:String].self, from: (row[5] as! String).data(using: .utf8)!)) ?? [:]
+//            session.ipAddress = row[6] as! String
+//            session.userAgent = row[7] as! String
+//            session.userCredentials = (try? JSONDecoder().decode(UserCredentials.self, from: (row[8] as! String).data(using: .utf8)!))
+//        }
         var session = CSSession()
         session.token = token
-        let server = connect()
-        let params = [token]
-        let lastStatement = MySQLStmt(server)
-        let _ = lastStatement.prepare(statement: "SELECT token,userid,created, updated, idle, data, ipaddress, useragent, userCredentials FROM \(CSSession.tableName) WHERE token = ?")
-        for p in params {
-            lastStatement.bindParam("\(p)")
-        }
-        _ = lastStatement.execute()
-        let result = lastStatement.results()
-        _ = result.forEachRow { row in
-
-            session.token = row[0] as! String
-            session.userId = row[1] as! UInt64
-            session.created = Int(row[2] as! Int32)
-            session.updated = Int(row[3] as! Int32)
-            session.idle = Int(row[4] as! Int32)
-            session.data = (try? JSONDecoder().decode([String:String].self, from: (row[5] as! String).data(using: .utf8)!)) ?? [:]
-            session.ipAddress = row[6] as! String
-            session.userAgent = row[7] as! String
-            session.userCredentials = (try? JSONDecoder().decode(UserCredentials.self, from: (row[8] as! String).data(using: .utf8)!))
+        if let resumedSession = try? db.table(CSSession.self).where(\CSSession.token == token).first(),
+            let unwrapedSession = resumedSession {
+            session = unwrapedSession
         }
         return session
     }

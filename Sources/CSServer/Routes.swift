@@ -45,10 +45,10 @@ extension CSRoutes {
         /// On fail login API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.add(method: .post, uri: "/api/v1/login", handler: AuthHandlers.bearerLogin, access: .guest, sessionType: .bearer)
         
-        /// Web login URL HTTP method="POST", accepts HTTP header Authorization="Basic  [base64 encoded username and password]"
+        /// Web login URL HTTP method="GET", accepts HTTP header Authorization="Basic  [base64 encoded username and password]"
         /// On success returns html body
         /// On fail web login  returns HTTP error code (not ok 200) with description
-        CSRoutes.add(method: .post, uri: "/login", handler: AuthHandlers.login, access: .guest, sessionType: .cookie)
+        CSRoutes.add(method: .get, uri: "/login", handler: AuthHandlers.login, access: .guest, sessionType: .cookie)
         
         /// Reset password API enpoint HTTP method="POST", accepts HTTP header Content-Type="application/json" and JSON body:
         /// - email: String
@@ -92,10 +92,22 @@ extension CSRoutes {
         /// On fail change password  API endpoint returns HTTP error code (not ok 200) with description
         CSRoutes.addToSuperUser(method: .post, uri: "/changePassword", handler: AuthHandlers.changePassword)
         
-        
+        CSRoutes.add(method: .get, uri: "/resetPassword", handler: AuthHandlers.passwordResetForm, access: .guest, sessionType: .cookie)
+        CSRoutes.add(method: .get, uri: "/signup", handler: AuthHandlers.registrationForm, access: .guest, sessionType: .cookie)
         CSRoutes.add(method: .get, uri: "/**", handler: AuthHandlers.loginForm, access: .guest, sessionType: .cookie)
+        CSRoutes.add(method: .get, uri: "/templates/**", handler: CSMainHandlers.staticTemplateFile)
+        CSRoutes.add(method: .get, uri: "/logout", handler: AuthHandlers.logout, access: .guest, sessionType: .cookie)
+        
+        CSRoutes.addToAdmin(method: .get, uri: "/admin/get/users", handler: CSUserHandlers.getUsers)
+        CSRoutes.addToAdmin(method: .post, uri: "/admin/save/user", handler: CSUserHandlers.saveUser)
+        
         CSRoutes.addToSuperUser(method: .get, uri: "/menu", handler: CSMainHandlers.getMenu)
-        CSRoutes.addToSuperUser(method: .get, uri: "/userRoles", handler: CSMainHandlers.getUserRole)
+        
+        CSRoutes.addToSuperUser(method: .get, uri: "/get", handler: CSMainHandlers.getEntity)
+        CSRoutes.addToSuperUser(method: .post, uri: "/find", handler: CSMainHandlers.findEntity)
+        CSRoutes.addToSuperUser(method: .post, uri: "/save", handler: CSMainHandlers.saveEntity)
+        
+//        CSRoutes.addToSuperUser(method: .get, uri: "/userRoles", handler: CSMainHandlers.getUserRole)
         CSRoutes.addToSuperUser(method: .get, uri: "/customData", handler: CSCustomDataHandlers.get)
         CSRoutes.addToSuperUser(method: .post, uri: "/customData", handler: CSCustomDataHandlers.save)
         CSRoutes.addToSuperUser(method: .post, uri: "/customData/create", handler: CSCustomDataHandlers.create)

@@ -6,7 +6,7 @@
         "repositoryURL": "https://github.com/barimax/CSCoreView.git",
         "state": {
           "branch": "master",
-          "revision": "28c381dbca1b720f6c0122d48318ed194fa8b0fb",
+          "revision": "5d6171aa187491b17cca664f3e064122f695e9ef",
           "version": null
         }
       },
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-COpenSSL.git",
         "state": {
           "branch": null,
-          "revision": "4669765f9c301a91cf76ad0ddeece27367017acc",
-          "version": "4.0.1"
+          "revision": "ce3113e159b8c6d8565e5d8db2672b572c81aea9",
+          "version": "4.0.2"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-Crypto.git",
         "state": {
           "branch": null,
-          "revision": "9a6fd2a63bf4f7f0b9a5eb90afa50eff66b7542d",
-          "version": "3.2.0"
+          "revision": "98373fa3a6c3d551e498c1babe4f25f650fa1310",
+          "version": "3.3.0"
         }
       },
       {
@@ -102,11 +102,11 @@
       },
       {
         "package": "PerfectMySQL",
-        "repositoryURL": "https://github.com/PerfectlySoft/Perfect-MySQL.git",
+        "repositoryURL": "https://github.com/barimax/Perfect-MySQL.git",
         "state": {
-          "branch": null,
-          "revision": "fe63085fe4639944657bf2f33b775e8036974eef",
-          "version": "3.5.1"
+          "branch": "master",
+          "revision": "d1f861a0a207feb585d7ed1efc400c9bd6a92a38",
+          "version": null
         }
       },
       {
@@ -159,8 +159,8 @@
         "repositoryURL": "https://github.com/iamjono/SwiftString.git",
         "state": {
           "branch": null,
-          "revision": "8017b12c3e20cf8fe4f9b5538a3aaf89562036c2",
-          "version": "2.1.1"
+          "revision": "ac8827f752ce79662df79e644c38a0a080d50b1d",
+          "version": "2.2.0"
         }
       }
     ]

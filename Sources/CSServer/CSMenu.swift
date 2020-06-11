@@ -8,6 +8,13 @@
 public struct CSMenu: Codable {
     public static var menu: [CSMenuMainItem] = []
     var menu: [CSMenuMainItem] = CSMenu.menu
+    
+    init(){
+        var administration = CSMenuMainItem(label: "Administration")
+        administration.submenuItems.append(CSMenuSubItem(label: User.pluralName, registerName: User.registerName))
+        administration.submenuItems.append(CSMenuSubItem(label: UserRole.pluralName, registerName: UserRole.registerName))
+        self.menu = CSMenu.menu + [administration]
+    }
 }
 public struct CSMenuMainItem: Codable {
     let label: String

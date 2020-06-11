@@ -12,7 +12,7 @@ import PerfectMySQL
 
 struct UserCredentials: Codable {
     public let email: String
-    public let userRole: Int
+    public let userRole: UInt64
     public let organization: Organization
 }
 
@@ -21,14 +21,17 @@ public struct AuthorizationFilter: HTTPRequestFilter {
     public func filter(request: HTTPRequest, response: HTTPResponse, callback: (HTTPRequestFilterResult) -> ()) {
         print(request.method)
         // skip session check if it is healthCheck URI
-        guard CSServer.configuration!.healthyCheckPath != request.uri else {
+        guard CSServer.configuration!.healthyCheckPath != request.uri, let sessionManager: CSSessionManager = try? CSSessionManager() else {
             return callback(.continue(request, response))
+        }
+        if request.method == .options {
+            CORSheaders.make(request, response)
+            response.completed()
         }
         // get route options for session and authenthication
         let routeOptions = CSServer.routes.getRouteOptions(uri: request.uri) ?? (.guest, .cookie)
         var createSession: Bool = true
         var session: CSSession = CSSession()
-        let sessionManager: CSSessionManager = CSSessionManager()
         if routeOptions.1 == .cookie {
             // try to resume session if it is cookie route
             if let cookieToken = request.getCookie(name: "\(CSServer.configuration!.domain)Session") {
@@ -40,20 +43,24 @@ public struct AuthorizationFilter: HTTPRequestFilter {
             // On fail halt request
             createSession = false
             do {
-                guard var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer ") else {
+                guard var bearer = request.header(.authorization), !bearer.isEmpty, bearer.hasPrefix("Bearer") else {
+                    print("Headers error.")
                     throw AuthError.invalidRequest
                 }
                 bearer.removeFirst("Bearer ".count)
                 guard let jwt = JWTVerifier(bearer) else {
+                    print("JWT error")
                     throw AuthError.invalidRequest
                 }
                 try jwt.verify(algo: .hs256, key: HMACKey(CSServer.configuration!.secret))
                 try jwt.verifyExpirationDate()
                 guard let token = jwt.payload[ClaimsNames.sessionToken.rawValue] as? String else {
+                    print("Token error.")
                     throw AuthError.invalidRequest
                 }
                 session = sessionManager.resume(token: token)
             }catch{
+                print(error)
                 response.status = .unauthorized
                 response.setHeader(.wwwAuthenticate, value: "Bearer")
                 callback(.halt(request, response))
@@ -75,7 +82,12 @@ public struct AuthorizationFilter: HTTPRequestFilter {
         // Create new session for cookie route only
         if createSession {
             print("Create new session.")
-            request.session = sessionManager.start(request)
+            if let newSession = try? sessionManager.start(request) {
+                request.session = newSession
+            }else{
+                callback(.halt(request, response))
+                return
+            }
         }
         if routeOptions.1 == .cookie && routeOptions.0 != .guest && request.method != .options {
             // Now process CSRF
@@ -96,12 +108,9 @@ public struct AuthorizationFilter: HTTPRequestFilter {
                     }
                 }
             }
-
-            CORSheaders.make(request, response)
         }
+            CORSheaders.make(request, response)
         // Check if session is NOT authentificated and halt it
-        print(routeOptions)
-        print(!((request.session?.userId ?? 0) > 0))
         if routeOptions.0 != .guest && !((request.session?.userId ?? 0) > 0) {
             if routeOptions.1 == .cookie {
                 response.setHeader(.wwwAuthenticate, value: "Basic")
@@ -122,13 +131,13 @@ public struct AuthorizationFilter: HTTPRequestFilter {
 struct SessionResponseFilter: HTTPResponseFilter {
     /// Called once before headers are sent to the client.
     func filterHeaders(response: HTTPResponse, callback: (HTTPResponseFilterResult) -> ()) {
-        guard let session = response.request.session else {
+        guard let session = response.request.session, let _ = try? CSSessionManager().save(session: session) else {
             return callback(.continue)
         }
         // Zero point in saving an OAuth2 Session because it's not part of the normal session structure!
 
 
-        CSSessionManager().save(session: session)
+        
         let sessionID = session.token
 
         // 0.0.6 updates

@@ -42,7 +42,7 @@ public class Authentication {
     }
     func conformationEmail(validationString: String) throws -> String {
         let templatePath = "\(CSServer.configuration!.template)/email.mustache"
-        let map: [String:Any] = [
+        let map: [String: Any] = [
             "validationString": validationString,
             "domainURL": CSServer.configuration!.domainURL
         ]
