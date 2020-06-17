@@ -47,11 +47,13 @@ class CSMainHandlers {
     }
     static func getEntity(request: HTTPRequest, _ response: HTTPResponse) {
         guard let registerName: String = request.param(name: "registerName"),
-            let db: String = request.session?.userCredentials?.organization.dbName else {
+            let db: String = request.session?.userCredentials?.organization.dbName,
+            let logger = try? CSLogger() else {
             response.status = .badRequest
             response.completed()
             return
         }
+        
         do {
             let entity = try CSEntity(registerName: registerName, database: db)
             if let strId = request.param(name: "id"),
@@ -61,6 +63,13 @@ class CSMainHandlers {
             if let _ = request.param(name: "all"){
                 try entity.loadAll()
             }
+            let log = CSLogEntity(
+                uri: request.uri,
+                description: "Get entity of type \"\(entity.view.singleName)",
+                user: request.session!.userCredentials!.email,
+                result: .success,
+                registerName: registerName)
+            try logger.log(database: db, log: log)
             response.sendResponse(body: entity, responseType: .json)
         } catch {
             response.status = .custom(code: 400, message: "\(error)")
@@ -69,7 +78,8 @@ class CSMainHandlers {
     }
     static func findEntity(request: HTTPRequest, _ response: HTTPResponse) {
         guard let registerName: String = request.param(name: "registerName"),
-            let db: String = request.session?.userCredentials?.organization.dbName else {
+            let db: String = request.session?.userCredentials?.organization.dbName,
+            let logger = try? CSLogger() else {
             response.status = .badRequest
             response.completed()
             return
@@ -78,9 +88,15 @@ class CSMainHandlers {
             let entity = try CSEntity(registerName: registerName, database: db)
             if let body = request.postBodyString {
                 if let data = body.data(using: .utf8),
-                let criteria: [String: String] = try? JSONDecoder().decode([String:String].self, from: data) {
-                print(criteria)
-                entity.rows = entity.find(criteria: criteria)
+                    let criteria: [String: String] = try? JSONDecoder().decode([String:String].self, from: data) {
+                    entity.rows = entity.find(criteria: criteria)
+                    let log = CSLogEntity(
+                        uri: request.uri,
+                        description: "Find entity of type \"\(entity.view.singleName)",
+                        user: request.session!.userCredentials!.email,
+                        result: .success,
+                        registerName: registerName)
+                    try logger.log(database: db, log: log)
                 }
             }
             response.sendResponse(body: entity, responseType: .json)
@@ -92,7 +108,8 @@ class CSMainHandlers {
     static func saveEntity(request: HTTPRequest, _ response: HTTPResponse) {
         guard let registerName: String = request.param(name: "registerName"),
             let db: String = request.session?.userCredentials?.organization.dbName,
-            let body: String = request.postBodyString else {
+            let body: String = request.postBodyString,
+            let logger = try? CSLogger() else {
             response.status = .badRequest
             response.completed()
             return
@@ -100,6 +117,13 @@ class CSMainHandlers {
         do {
             let entity = try CSEntity(registerName: registerName, encodedEntity: body, database: db)
             try entity.saveAndLoad()
+            let log = CSLogEntity(
+                uri: request.uri,
+                description: "Save entity of type \"\(entity.view.singleName)",
+                user: request.session!.userCredentials!.email,
+                result: .success,
+                registerName: registerName)
+            try logger.log(database: db, log: log)
             response.sendResponse(body: entity, responseType: .json)
         } catch {
             response.status = .custom(code: 400, message: "\(error)")
@@ -116,7 +140,7 @@ class CSMainHandlers {
         }
         do {
             let entity = try CSEntity(registerName: registerName, encodedEntity: body, database: db)
-            try entity.recalculate()
+            entity.recalculate()
             response.sendResponse(body: entity, responseType: .json)
         } catch {
             response.status = .custom(code: 400, message: "\(error)")

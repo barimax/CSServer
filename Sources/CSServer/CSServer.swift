@@ -56,6 +56,7 @@ public struct CSServer {
     private func createClientDatabaseTables() throws {
         let organizations: [Organization] = try Organization.view(CSServer.configuration!.masterDBName).getAll() as! [Organization]
         for o in organizations {
+            try CSLogger().create(database: o.dbName)
             try CSRegister.setup(withDatabase: o.dbName, host: CSServer.configuration!.host, username: CSServer.configuration!.username, password: CSServer.configuration!.password)
         }
     }

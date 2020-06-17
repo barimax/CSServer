@@ -21,6 +21,7 @@ public struct Configuration {
     public var template: String = "./template"
     public var secret: String
     public var healthyCheckPath: String = "/healthCheck"
+    public var activeLog: Bool = true
     
     public var smtpConfiguration: SMTPConfig
     
