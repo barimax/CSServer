@@ -7,21 +7,23 @@
 import CSCoreView
 import Foundation
 
-struct User: CSEntityProtocol {
+public struct User: CSEntityProtocol, CSOptionableEntityProtocol {
+    public static var optionField: AnyKeyPath = \User.email
     
-    static var registerName: String = "user"
-    static var tableName: String = "users"
-    static var singleName: String = "User"
-    static var pluralName: String = "Users"
-    static var searchableFields: [AnyKeyPath] = [\User.name, \User.email, \User.phone]
-    static var fields: [CSPropertyDescription] = [
+    
+    public static var registerName: String = "user"
+    public static var tableName: String = "users"
+    public static var singleName: String = "User"
+    public static var pluralName: String = "Users"
+    public static var searchableFields: [AnyKeyPath] = [\User.name, \User.email, \User.phone]
+    public static var fields: [CSPropertyDescription] = [
         CSPropertyDescription(keyPath: \User.name, name: "name", label: "Name", ref: nil, fieldType: .text, jsType: .string, colWidth: .large, required: true, order: 1),
         CSPropertyDescription(keyPath: \User.email, name: "email", label: "E-mail", ref: nil, fieldType: .email, jsType: .string, colWidth: .normal, required: true, order: 2),
         CSPropertyDescription(keyPath: \User.phone,name: "phone", label: "Phone number", ref: nil, fieldType: .text, jsType: .string, colWidth: .normal, required: true, order: 3),
         CSPropertyDescription(keyPath: \User.userRole,name: "userRole", label: "Role", ref: UserRole.self, fieldType: .select, jsType: .number, colWidth: .normal, required: true, order: 4)
     ]
     
-    var id: UInt64
+    public var id: UInt64
     var organizationId: UInt64
     var name: String
     var email: String

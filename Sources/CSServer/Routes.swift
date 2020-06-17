@@ -106,6 +106,7 @@ extension CSRoutes {
         CSRoutes.addToSuperUser(method: .get, uri: "/get", handler: CSMainHandlers.getEntity)
         CSRoutes.addToSuperUser(method: .post, uri: "/find", handler: CSMainHandlers.findEntity)
         CSRoutes.addToSuperUser(method: .post, uri: "/save", handler: CSMainHandlers.saveEntity)
+        CSRoutes.addToSuperUser(method: .post, uri: "/recalulate", handler: CSMainHandlers.saveEntity)
         
 //        CSRoutes.addToSuperUser(method: .get, uri: "/userRoles", handler: CSMainHandlers.getUserRole)
         CSRoutes.addToSuperUser(method: .get, uri: "/customData", handler: CSCustomDataHandlers.get)

@@ -106,6 +106,23 @@ class CSMainHandlers {
         }
         response.completed()
     }
+    static func recalulateEntity(request: HTTPRequest, _ response: HTTPResponse) {
+        guard let registerName: String = request.param(name: "registerName"),
+            let db: String = request.session?.userCredentials?.organization.dbName,
+            let body: String = request.postBodyString else {
+            response.status = .badRequest
+            response.completed()
+            return
+        }
+        do {
+            let entity = try CSEntity(registerName: registerName, encodedEntity: body, database: db)
+            try entity.recalculate()
+            response.sendResponse(body: entity, responseType: .json)
+        } catch {
+            response.status = .custom(code: 400, message: "\(error)")
+        }
+        response.completed()
+    }
 }
 
 class CSUserHandlers {

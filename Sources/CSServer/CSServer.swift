@@ -8,7 +8,7 @@ public struct CSServer {
     public static var filters: CSFilters.Type = CSFilters.self
     
     public init(configuration c: Configuration) throws {
-        let dbConfig = CSCoreDB(host: c.host, username: c.username, password: c.password)
+        let dbConfig = CSCoreDB(host: c.host, username: c.username, password: c.password, masterDatabase: c.masterDBName)
         CSServer.configuration = c
         CSCoreDBConfig.dbConfiguration = dbConfig
         try self.createMasterTables()
